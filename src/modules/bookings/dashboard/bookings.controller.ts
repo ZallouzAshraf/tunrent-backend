@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -12,6 +13,7 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '../../../common/decorators/current-user.decorator';
 import { AgencyMemberGuard } from '../../../common/guards/agency-member.guard';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { PaymentsService } from '../../payments/payments.service';
 import { BookingsService } from '../bookings.service';
 import { BookingQueryDto } from '../dto/booking-query.dto';
 import { CancelBookingDto } from '../dto/cancel-booking.dto';
@@ -20,7 +22,10 @@ import { RejectBookingDto } from '../dto/reject-booking.dto';
 @Controller('dashboard/bookings')
 @UseGuards(JwtAuthGuard, AgencyMemberGuard)
 export class DashboardBookingsController {
-  constructor(private readonly bookingsService: BookingsService) {}
+  constructor(
+    private readonly bookingsService: BookingsService,
+    private readonly paymentsService: PaymentsService,
+  ) {}
 
   @Get()
   findAll(
@@ -75,5 +80,15 @@ export class DashboardBookingsController {
     @Body() dto: CancelBookingDto,
   ) {
     return this.bookingsService.cancel(id, agencyId, dto);
+  }
+
+  @Post(':id/mark-paid-cash')
+  async markPaidCash(
+    @CurrentAgency() agencyId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    await this.paymentsService.markBookingPaidCash(id, agencyId, user.sub);
+    return this.bookingsService.findByIdDashboard(id, agencyId);
   }
 }

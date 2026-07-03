@@ -1,12 +1,16 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
+  BookingStatus,
   NotificationType,
+  PaymentMethod,
   PaymentStatus,
+  PaymentType,
 } from '../../common/enums';
 import {
   buildPaginatedResult,
@@ -124,5 +128,65 @@ export class PaymentsService {
     }
 
     return saved;
+  }
+
+  async markBookingPaidCash(
+    bookingId: string,
+    agencyId: string,
+    userId: string,
+  ): Promise<Payment> {
+    const booking = await this.bookingRepo.findOne({
+      where: { id: bookingId, agencyId },
+      relations: { payments: true },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    const blockedStatuses = [
+      BookingStatus.PENDING,
+      BookingStatus.REJECTED,
+      BookingStatus.CANCELLED,
+    ];
+
+    if (blockedStatuses.includes(booking.status)) {
+      throw new BadRequestException(
+        'Payment can only be recorded for confirmed or active bookings',
+      );
+    }
+
+    const paidAmount = (booking.payments ?? [])
+      .filter((payment) => payment.status === PaymentStatus.COMPLETED)
+      .reduce((sum, payment) => sum + Number(payment.amount), 0);
+
+    const totalDue = Number(booking.totalPrice);
+
+    if (paidAmount >= totalDue) {
+      const existing = [...(booking.payments ?? [])]
+        .filter((payment) => payment.status === PaymentStatus.COMPLETED)
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )[0];
+
+      if (existing) {
+        return existing;
+      }
+    }
+
+    const amount = Math.max(0, totalDue - paidAmount);
+
+    return this.create(
+      agencyId,
+      {
+        bookingId,
+        amount,
+        method: PaymentMethod.CASH,
+        type: PaymentType.FULL_PAYMENT,
+        notes: 'Encaissement espèces à l\'agence',
+      },
+      userId,
+    );
   }
 }

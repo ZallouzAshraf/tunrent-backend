@@ -216,6 +216,7 @@ export class BookingsService {
     const qb = this.bookingRepo
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.car', 'car')
+      .leftJoinAndSelect('booking.payments', 'payments')
       .where('booking.agencyId = :agencyId', { agencyId });
 
     if (query.status) {
@@ -274,6 +275,10 @@ export class BookingsService {
     userId: string,
   ): Promise<Booking> {
     const booking = await this.findByIdDashboard(id, agencyId);
+
+    if (booking.status === BookingStatus.CONFIRMED) {
+      return booking;
+    }
 
     if (booking.status !== BookingStatus.PENDING) {
       throw new BadRequestException('Only pending bookings can be confirmed');

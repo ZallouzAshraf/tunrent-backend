@@ -7,6 +7,7 @@ import { AvailabilityModule } from '../availability/availability.module';
 import { Car } from '../cars/entities/car.entity';
 import { MailModule } from '../mail/mail.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { User } from '../users/entities/user.entity';
 import { BookingsService } from './bookings.service';
 import { ClientBookingsController } from './client/bookings.controller';
@@ -21,6 +22,7 @@ import { MarketplaceBookingsController } from './marketplace/bookings.controller
     AvailabilityModule,
     MailModule,
     NotificationsModule,
+    PaymentsModule,
   ],
   controllers: [
     MarketplaceBookingsController,
