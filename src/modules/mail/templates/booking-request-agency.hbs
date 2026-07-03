@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Nouvelle demande</title></head>
+<body>
+  <h1>Nouvelle demande de réservation</h1>
+  <p>Bonjour {{agencyName}},</p>
+  <p>Une nouvelle demande a été reçue (réf. {{bookingReference}}).</p>
+  <ul>
+    <li>Client : {{clientName}} ({{clientEmail}}, {{clientPhone}})</li>
+    <li>Véhicule : {{carName}}</li>
+    <li>Dates : {{startDate}} → {{endDate}}</li>
+    <li>Total : {{totalPrice}} TND</li>
+  </ul>
+  <p><a href="{{dashboardUrl}}">Voir la demande</a></p>
+</body>
+</html>

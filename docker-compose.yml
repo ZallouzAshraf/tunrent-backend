@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tunrent-postgres
+    environment:
+      POSTGRES_USER: tunrent
+      POSTGRES_PASSWORD: tunrent
+      POSTGRES_DB: car_rental_tn
+    ports:
+      - "5433:5432"
+    volumes:
+      - tunrent_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tunrent -d car_rental_tn"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  tunrent_pg_data:

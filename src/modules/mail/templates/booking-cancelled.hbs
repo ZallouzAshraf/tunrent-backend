@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Réservation annulée</title></head>
+<body>
+  <h1>Réservation annulée</h1>
+  <p>Bonjour {{recipientName}},</p>
+  <p>La réservation {{bookingReference}} ({{carName}} — {{agencyName}}) a été annulée par {{cancelledBy}}.</p>
+  {{#if cancellationReason}}
+  <p>Raison : {{cancellationReason}}</p>
+  {{/if}}
+</body>
+</html>

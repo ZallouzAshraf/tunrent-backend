@@ -1,0 +1,723 @@
+# PROMPT BACKEND — Plateforme SaaS Multi-Tenant de Location de Voitures (Tunisie)
+
+## Contexte & Stack
+
+Tu es un développeur NestJS senior avec 10 ans d'expérience. Tu dois construire le backend complet d'une plateforme SaaS de location de voitures en Tunisie avec les caractéristiques suivantes :
+
+- **Architecture** : Multi-tenant (shared database, shared schema avec `agency_id` comme discriminant)
+- **Backend** : NestJS + TypeScript + TypeORM + PostgreSQL
+- **Auth** : JWT (access token 15min + refresh token 7 jours)
+- **2 types d'usages** :
+  1. **Dashboard Agence** : chaque agence = 1 tenant, avec plusieurs users internes (owner / manager / agent)
+  2. **Marketplace publique** : visiteurs et clients qui cherchent une voiture, toutes agences confondues
+
+---
+
+## Schéma de Base de Données (PostgreSQL + TypeORM)
+
+Génère toutes les entités TypeORM avec leurs colonnes, relations, index et contraintes.
+
+---
+
+### Table : `users`
+Compte de connexion global (clients + users agence + super admin)
+
+| Colonne | Type | Contraintes | Description |
+|---|---|---|---|
+| id | UUID | PK, default uuid_generate_v4() | |
+| first_name | VARCHAR(100) | NOT NULL | |
+| last_name | VARCHAR(100) | NOT NULL | |
+| email | VARCHAR(255) | NOT NULL, UNIQUE | |
+| password_hash | VARCHAR(255) | NOT NULL | bcrypt |
+| phone | VARCHAR(20) | NULLABLE | format +216XXXXXXXX |
+| cin | VARCHAR(8) | NULLABLE, UNIQUE | Carte identité tunisienne |
+| driving_license_number | VARCHAR(50) | NULLABLE | Numéro permis |
+| driving_license_expiry | DATE | NULLABLE | |
+| driving_license_photo_url | TEXT | NULLABLE | |
+| cin_photo_url | TEXT | NULLABLE | |
+| avatar_url | TEXT | NULLABLE | |
+| role_global | ENUM | NOT NULL, default 'client' | 'super_admin', 'client' |
+| is_email_verified | BOOLEAN | NOT NULL, default false | |
+| email_verification_token | VARCHAR(255) | NULLABLE | |
+| email_verification_expires_at | TIMESTAMP | NULLABLE | |
+| password_reset_token | VARCHAR(255) | NULLABLE | |
+| password_reset_expires_at | TIMESTAMP | NULLABLE | |
+| refresh_token_hash | TEXT | NULLABLE | |
+| is_active | BOOLEAN | NOT NULL, default true | |
+| last_login_at | TIMESTAMP | NULLABLE | |
+| created_at | TIMESTAMP | NOT NULL, default now() | |
+| updated_at | TIMESTAMP | NOT NULL, default now() | |
+
+**Index** : `email`, `cin`, `phone`
+
+---
+
+### Table : `agencies`
+Le tenant. Chaque agence = 1 tenant.
+
+| Colonne | Type | Contraintes | Description |
+|---|---|---|---|
+| id | UUID | PK | |
+| name | VARCHAR(255) | NOT NULL | Nom commercial |
+| slug | VARCHAR(100) | NOT NULL, UNIQUE | URL-friendly, auto-généré depuis `name` |
+| description | TEXT | NULLABLE | |
+| logo_url | TEXT | NULLABLE | |
+| cover_url | TEXT | NULLABLE | |
+| email | VARCHAR(255) | NOT NULL | Email professionnel |
+| phone | VARCHAR(20) | NOT NULL | |
+| phone_whatsapp | VARCHAR(20) | NULLABLE | |
+| address | TEXT | NOT NULL | |
+| city | VARCHAR(100) | NOT NULL | |
+| governorate | ENUM | NOT NULL | 'tunis','ariana','ben_arous','manouba','nabeul','zaghouan','bizerte','beja','jendouba','kef','siliana','sousse','monastir','mahdia','sfax','kairouan','kasserine','sidi_bouzid','gabes','mednine','tataouine','gafsa','tozeur','kebili' |
+| postal_code | VARCHAR(10) | NULLABLE | |
+| latitude | DECIMAL(10,8) | NULLABLE | |
+| longitude | DECIMAL(11,8) | NULLABLE | |
+| patente_number | VARCHAR(50) | NULLABLE | Numéro patente (validation légale) |
+| patente_url | TEXT | NULLABLE | Document scanné |
+| rib | VARCHAR(20) | NULLABLE | RIB bancaire pour paiements |
+| status | ENUM | NOT NULL, default 'pending_validation' | 'pending_validation','active','suspended','rejected' |
+| rejection_reason | TEXT | NULLABLE | Si status = rejected |
+| plan | ENUM | NOT NULL, default 'free' | 'free','starter','pro','enterprise' |
+| plan_expires_at | TIMESTAMP | NULLABLE | |
+| max_cars | INT | NOT NULL, default 5 | Limite selon le plan |
+| max_users | INT | NOT NULL, default 2 | |
+| is_featured | BOOLEAN | NOT NULL, default false | Mise en avant marketplace |
+| avg_rating | DECIMAL(3,2) | NOT NULL, default 0 | Calculé depuis reviews |
+| total_reviews | INT | NOT NULL, default 0 | |
+| total_bookings | INT | NOT NULL, default 0 | |
+| created_at | TIMESTAMP | NOT NULL, default now() | |
+| updated_at | TIMESTAMP | NOT NULL, default now() | |
+
+**Index** : `slug`, `governorate`, `status`, `plan`
+
+---
+
+### Table : `agency_users`
+Pivot multi-user par agence avec rôles internes
+
+| Colonne | Type | Contraintes | Description |
+|---|---|---|---|
+| id | UUID | PK | |
+| agency_id | UUID | FK agencies.id, NOT NULL | |
+| user_id | UUID | FK users.id, NOT NULL | |
+| role | ENUM | NOT NULL | 'owner','manager','agent' |
+| status | ENUM | NOT NULL, default 'active' | 'active','invited','suspended' |
+| invitation_token | VARCHAR(255) | NULLABLE | Token email invitation |
+| invitation_expires_at | TIMESTAMP | NULLABLE | |
+| invited_by_user_id | UUID | FK users.id, NULLABLE | |
+| created_at | TIMESTAMP | NOT NULL, default now() | |
+| updated_at | TIMESTAMP | NOT NULL, default now() | |
+
+**Contrainte** : UNIQUE(`agency_id`, `user_id`)
+**Index** : `agency_id`, `user_id`, `invitation_token`
+
+---
+
+### Table : `cars`
+Véhicules d'une agence
+
+| Colonne | Type | Contraintes | Description |
+|---|---|---|---|
+| id | UUID | PK | |
+| agency_id | UUID | FK agencies.id, NOT NULL | Discriminant tenant |
+| brand | VARCHAR(100) | NOT NULL | Marque (Renault, Peugeot…) |
+| model | VARCHAR(100) | NOT NULL | Modèle (Clio, 208…) |
+| year | SMALLINT | NOT NULL | Année fabrication |
+| color | VARCHAR(50) | NULLABLE | |
+| registration_number | VARCHAR(20) | NOT NULL | Immatriculation tunisienne |
+| vin | VARCHAR(17) | NULLABLE, UNIQUE | Numéro châssis |
+| category | ENUM | NOT NULL | 'economy','compact','suv','sedan','luxury','van','pickup','convertible' |
+| transmission | ENUM | NOT NULL | 'manual','automatic' |
+| fuel_type | ENUM | NOT NULL | 'gasoline','diesel','electric','hybrid' |
+| seats | SMALLINT | NOT NULL | Nombre de places |
+| doors | SMALLINT | NOT NULL, default 4 | |
+| has_ac | BOOLEAN | NOT NULL, default true | Climatisation |
+| has_gps | BOOLEAN | NOT NULL, default false | |
+| has_bluetooth | BOOLEAN | NOT NULL, default false | |
+| has_usb | BOOLEAN | NOT NULL, default false | |
+| has_child_seat | BOOLEAN | NOT NULL, default false | |
+| has_insurance | BOOLEAN | NOT NULL, default true | |
+| mileage | INT | NULLABLE | Kilométrage actuel |
+| price_per_day | DECIMAL(10,2) | NOT NULL | Prix en TND |
+| price_per_week | DECIMAL(10,2) | NULLABLE | Prix hebdo (optionnel) |
+| deposit_amount | DECIMAL(10,2) | NULLABLE | Caution |
+| min_rental_days | SMALLINT | NOT NULL, default 1 | |
+| min_driver_age | SMALLINT | NOT NULL, default 21 | |
+| status | ENUM | NOT NULL, default 'available' | 'available','rented','maintenance','inactive' |
+| photos | JSONB | NOT NULL, default '[]' | Array d'URLs photos |
+| thumbnail_url | TEXT | NULLABLE | Photo principale |
+| description | TEXT | NULLABLE | |
+| pickup_locations | JSONB | NOT NULL, default '[]' | Array de {city, address, lat, lng} |
+| created_by | UUID | FK users.id, NULLABLE | |
+| created_at | TIMESTAMP | NOT NULL, default now() | |
+| updated_at | TIMESTAMP | NOT NULL, default now() | |
+
+**Index** : `agency_id`, `status`, `category`, `fuel_type`, `price_per_day`
+**Contrainte** : UNIQUE(`agency_id`, `registration_number`)
+
+---
+
+### Table : `bookings`
+Demandes et réservations (client connecté ou invité)
+
+| Colonne | Type | Contraintes | Description |
+|---|---|---|---|
+| id | UUID | PK | |
+| booking_reference | VARCHAR(20) | NOT NULL, UNIQUE | ex: "LOC-2024-00042" |
+| agency_id | UUID | FK agencies.id, NOT NULL | Discriminant tenant |
+| car_id | UUID | FK cars.id, NOT NULL | |
+| client_user_id | UUID | FK users.id, NULLABLE | NULL si client non connecté |
+| client_first_name | VARCHAR(100) | NOT NULL | Toujours rempli |
+| client_last_name | VARCHAR(100) | NOT NULL | |
+| client_email | VARCHAR(255) | NOT NULL | |
+| client_phone | VARCHAR(20) | NOT NULL | |
+| client_cin | VARCHAR(8) | NULLABLE | |
+| client_driving_license | VARCHAR(50) | NULLABLE | |
+| start_date | DATE | NOT NULL | |
+| end_date | DATE | NOT NULL | |
+| total_days | SMALLINT | NOT NULL | Calculé |
+| pickup_location | TEXT | NOT NULL | |
+| dropoff_location | TEXT | NOT NULL | |
+| price_per_day | DECIMAL(10,2) | NOT NULL | Snapshot au moment de la résa |
+| total_price | DECIMAL(10,2) | NOT NULL | |
+| deposit_amount | DECIMAL(10,2) | NULLABLE | |
+| status | ENUM | NOT NULL, default 'pending' | 'pending','confirmed','rejected','in_progress','completed','cancelled' |
+| rejection_reason | TEXT | NULLABLE | |
+| cancellation_reason | TEXT | NULLABLE | |
+| cancelled_by | ENUM | NULLABLE | 'client','agency','system' |
+| client_notes | TEXT | NULLABLE | Remarques du client |
+| agency_notes | TEXT | NULLABLE | Notes internes agence |
+| confirmed_by | UUID | FK users.id, NULLABLE | User agence qui a confirmé |
+| confirmed_at | TIMESTAMP | NULLABLE | |
+| pickup_at | TIMESTAMP | NULLABLE | Heure réelle de prise |
+| dropoff_at | TIMESTAMP | NULLABLE | Heure réelle de retour |
+| source | ENUM | NOT NULL, default 'marketplace' | 'marketplace','direct','phone' |
+| created_at | TIMESTAMP | NOT NULL, default now() | |
+| updated_at | TIMESTAMP | NOT NULL, default now() | |
+
+**Index** : `agency_id`, `car_id`, `client_user_id`, `status`, `start_date`, `end_date`, `booking_reference`
+**Contrainte CHECK** : `end_date > start_date`
+
+---
+
+### Table : `payments`
+Paiements liés à une réservation
+
+| Colonne | Type | Contraintes | Description |
+|---|---|---|---|
+| id | UUID | PK | |
+| agency_id | UUID | FK agencies.id, NOT NULL | Tenant |
+| booking_id | UUID | FK bookings.id, NOT NULL | |
+| amount | DECIMAL(10,2) | NOT NULL | |
+| currency | VARCHAR(3) | NOT NULL, default 'TND' | |
+| method | ENUM | NOT NULL | 'cash','card','flouci','d17','clictopay','bank_transfer' |
+| type | ENUM | NOT NULL | 'deposit','full_payment','partial','refund' |
+| status | ENUM | NOT NULL, default 'pending' | 'pending','completed','failed','refunded' |
+| transaction_id | VARCHAR(255) | NULLABLE | ID externe (Flouci, D17…) |
+| gateway_response | JSONB | NULLABLE | Réponse brute du gateway |
+| paid_at | TIMESTAMP | NULLABLE | |
+| notes | TEXT | NULLABLE | |
+| created_by | UUID | FK users.id, NULLABLE | |
+| created_at | TIMESTAMP | NOT NULL, default now() | |
+
+**Index** : `agency_id`, `booking_id`, `status`, `transaction_id`
+
+---
+
+### Table : `reviews`
+Avis clients sur les voitures/agences
+
+| Colonne | Type | Contraintes | Description |
+|---|---|---|---|
+| id | UUID | PK | |
+| agency_id | UUID | FK agencies.id, NOT NULL | |
+| car_id | UUID | FK cars.id, NULLABLE | |
+| booking_id | UUID | FK bookings.id, NOT NULL, UNIQUE | 1 avis par réservation |
+| client_user_id | UUID | FK users.id, NULLABLE | |
+| client_name | VARCHAR(200) | NOT NULL | Snapshot nom |
+| rating_overall | SMALLINT | NOT NULL | 1 à 5 |
+| rating_car_condition | SMALLINT | NULLABLE | 1 à 5 |
+| rating_service | SMALLINT | NULLABLE | 1 à 5 |
+| rating_value | SMALLINT | NULLABLE | 1 à 5 (rapport qualité/prix) |
+| comment | TEXT | NULLABLE | |
+| agency_reply | TEXT | NULLABLE | Réponse de l'agence |
+| agency_replied_at | TIMESTAMP | NULLABLE | |
+| is_visible | BOOLEAN | NOT NULL, default true | Modération |
+| created_at | TIMESTAMP | NOT NULL, default now() | |
+
+**Contrainte CHECK** : `rating_overall BETWEEN 1 AND 5`
+**Index** : `agency_id`, `car_id`, `client_user_id`
+
+---
+
+### Table : `notifications`
+Notifications in-app + déclencheur email/SMS
+
+| Colonne | Type | Contraintes | Description |
+|---|---|---|---|
+| id | UUID | PK | |
+| agency_id | UUID | FK agencies.id, NULLABLE | NULL si notification client |
+| user_id | UUID | FK users.id, NOT NULL | Destinataire |
+| type | ENUM | NOT NULL | 'booking_new','booking_confirmed','booking_rejected','booking_cancelled','booking_completed','payment_received','review_new','invitation','system' |
+| title | VARCHAR(255) | NOT NULL | |
+| message | TEXT | NOT NULL | |
+| data | JSONB | NULLABLE | Payload (booking_id, car_id…) |
+| is_read | BOOLEAN | NOT NULL, default false | |
+| read_at | TIMESTAMP | NULLABLE | |
+| created_at | TIMESTAMP | NOT NULL, default now() | |
+
+**Index** : `user_id`, `is_read`, `agency_id`
+
+---
+
+### Table : `car_availability_blocks`
+Blocages manuels du calendrier (hors réservations)
+
+| Colonne | Type | Contraintes | Description |
+|---|---|---|---|
+| id | UUID | PK | |
+| agency_id | UUID | FK agencies.id, NOT NULL | |
+| car_id | UUID | FK cars.id, NOT NULL | |
+| start_date | DATE | NOT NULL | |
+| end_date | DATE | NOT NULL | |
+| reason | VARCHAR(255) | NULLABLE | 'maintenance','reserved','other' |
+| notes | TEXT | NULLABLE | |
+| created_by | UUID | FK users.id, NULLABLE | |
+| created_at | TIMESTAMP | NOT NULL, default now() | |
+
+**Index** : `car_id`, `start_date`, `end_date`
+
+---
+
+### Table : `audit_logs`
+Traçabilité des actions (obligatoire pour SaaS B2B)
+
+| Colonne | Type | Contraintes | Description |
+|---|---|---|---|
+| id | UUID | PK | |
+| agency_id | UUID | FK agencies.id, NULLABLE | |
+| user_id | UUID | FK users.id, NULLABLE | |
+| action | VARCHAR(100) | NOT NULL | ex: 'booking.confirmed', 'car.updated' |
+| entity_type | VARCHAR(50) | NULLABLE | 'booking','car','user'… |
+| entity_id | UUID | NULLABLE | |
+| old_values | JSONB | NULLABLE | |
+| new_values | JSONB | NULLABLE | |
+| ip_address | VARCHAR(45) | NULLABLE | |
+| user_agent | TEXT | NULLABLE | |
+| created_at | TIMESTAMP | NOT NULL, default now() | |
+
+**Index** : `agency_id`, `user_id`, `entity_type`, `entity_id`
+
+---
+
+## Architecture NestJS — Modules à générer
+
+### Structure des dossiers
+
+```
+src/
+├── common/
+│   ├── decorators/
+│   │   ├── current-user.decorator.ts
+│   │   ├── current-agency.decorator.ts
+│   │   └── roles.decorator.ts
+│   ├── guards/
+│   │   ├── jwt-auth.guard.ts
+│   │   ├── refresh-token.guard.ts
+│   │   ├── agency-member.guard.ts   ← vérifie que le user appartient au tenant
+│   │   └── roles.guard.ts
+│   ├── interceptors/
+│   │   ├── tenant.interceptor.ts    ← injecte agency_id dans toutes les requêtes dashboard
+│   │   └── audit.interceptor.ts
+│   ├── filters/
+│   │   └── all-exceptions.filter.ts
+│   ├── pipes/
+│   │   └── parse-uuid.pipe.ts
+│   └── utils/
+│       ├── slug.util.ts
+│       ├── booking-reference.util.ts
+│       └── pagination.util.ts
+│
+├── modules/
+│   ├── auth/            ← Login, register, refresh, forgot/reset password, email verify
+│   ├── users/           ← CRUD profil user (client)
+│   ├── agencies/        ← CRUD agences (super_admin + self)
+│   ├── agency-users/    ← Gestion membres internes (invite, rôles, suspend)
+│   ├── cars/            ← CRUD voitures (tenant-scoped)
+│   ├── bookings/        ← Réservations (marketplace + dashboard)
+│   ├── payments/        ← Gestion paiements
+│   ├── reviews/         ← Avis clients
+│   ├── notifications/   ← Notifs in-app + triggers
+│   ├── availability/    ← Calendrier dispo + blocages manuels
+│   ├── marketplace/     ← Search public (cross-tenant, no auth)
+│   ├── uploads/         ← Upload fichiers (Cloudinary ou S3-compatible)
+│   ├── mail/            ← Service email (Nodemailer + templates Handlebars)
+│   └── admin/           ← Super admin panel (valider agences, stats globales)
+│
+├── config/
+│   ├── database.config.ts
+│   ├── jwt.config.ts
+│   └── app.config.ts
+│
+└── main.ts
+```
+
+---
+
+## Implémentation — Points critiques
+
+### 1. Isolation Multi-Tenant (OBLIGATOIRE)
+
+Crée un `TenantInterceptor` qui :
+1. Extrait le `agency_id` du JWT payload (claim `agencyId`)
+2. L'attache à `request.agencyId`
+3. **Tout service tenant-scoped** reçoit `agencyId` en paramètre et l'ajoute SYSTÉMATIQUEMENT à chaque `findOne`, `findAll`, `update`, `delete`
+
+```typescript
+// Exemple pattern dans tous les services tenant-scoped
+async findCarById(carId: string, agencyId: string): Promise<Car> {
+  const car = await this.carsRepo.findOne({
+    where: { id: carId, agencyId }, // ← TOUJOURS les deux
+  });
+  if (!car) throw new NotFoundException('Car not found');
+  return car;
+}
+```
+
+**Ne jamais** faire un `findOne({ where: { id: carId } })` seul dans un contexte dashboard.
+
+---
+
+### 2. Auth — JWT Double Token
+
+- **Access token** : 15 minutes, payload `{ sub: userId, agencyId?, role, agencyRole? }`
+- **Refresh token** : 7 jours, stocké en DB hashé (bcrypt) dans `users.refresh_token_hash`
+- `POST /auth/register` → crée user, envoie email vérification
+- `POST /auth/login` → retourne `{ access_token, refresh_token, user }`
+- `POST /auth/refresh` → valide refresh token en DB, retourne nouveau access token
+- `POST /auth/logout` → invalide le refresh token en DB (met à null)
+- `POST /auth/forgot-password` → génère token 1h, envoie email
+- `POST /auth/reset-password` → valide token, hash nouveau mot de passe
+- `GET /auth/verify-email/:token` → vérifie email
+
+**Login agence** : quand un `agency_user` se connecte, le JWT doit embarquer `agencyId` + `agencyRole` pour que le TenantInterceptor puisse les extraire.
+
+---
+
+### 3. Module Marketplace (public, sans auth)
+
+```
+GET /marketplace/cars
+  ?governorate=tunis
+  &category=suv
+  &start_date=2024-06-10
+  &end_date=2024-06-15
+  &min_price=50
+  &max_price=200
+  &transmission=automatic
+  &has_ac=true
+  &seats=5
+  &sort=price_asc|price_desc|rating_desc
+  &page=1
+  &limit=12
+
+GET /marketplace/cars/:id         ← détail voiture + agence info
+GET /marketplace/agencies         ← liste agences actives avec filtres
+GET /marketplace/agencies/:slug   ← profil public d'une agence + ses voitures
+```
+
+La requête de disponibilité doit exclure les voitures qui ont :
+1. Un `booking` avec `status IN ('confirmed','in_progress')` et dont `start_date <= end_date_param AND end_date >= start_date_param`
+2. Un `car_availability_block` sur les mêmes dates
+
+```sql
+-- Voitures disponibles sur une période
+SELECT c.* FROM cars c
+WHERE c.status = 'available'
+AND c.agency_id IN (SELECT id FROM agencies WHERE status = 'active')
+AND c.id NOT IN (
+  SELECT car_id FROM bookings
+  WHERE status IN ('confirmed','in_progress')
+  AND start_date <= :endDate AND end_date >= :startDate
+)
+AND c.id NOT IN (
+  SELECT car_id FROM car_availability_blocks
+  WHERE start_date <= :endDate AND end_date >= :startDate
+)
+```
+
+---
+
+### 4. Module Bookings
+
+**Marketplace (public)** :
+- `POST /marketplace/bookings` → crée une demande (status = 'pending'), envoie email à l'agence + confirmation au client
+- `GET /marketplace/bookings/:reference` → status de la demande (par référence + email, sans auth)
+
+**Dashboard Agence** :
+- `GET /dashboard/bookings` → liste avec filtres (status, date, search)
+- `GET /dashboard/bookings/:id` → détail
+- `PATCH /dashboard/bookings/:id/confirm` → confirme (status → 'confirmed'), notifie client
+- `PATCH /dashboard/bookings/:id/reject` → rejette avec raison, notifie client
+- `PATCH /dashboard/bookings/:id/start` → démarre (status → 'in_progress'), met car.status → 'rented'
+- `PATCH /dashboard/bookings/:id/complete` → termine (status → 'completed'), met car.status → 'available', déclenche demande d'avis
+- `PATCH /dashboard/bookings/:id/cancel` → annule
+- `GET /dashboard/bookings/calendar` → vue calendrier (toutes voitures + réservations)
+
+**Espace Client (auth required)** :
+- `GET /client/bookings` → historique réservations du client connecté
+- `DELETE /client/bookings/:id` → annulation par le client (si status = 'pending' ou 'confirmed' et J-2 minimum)
+
+---
+
+### 5. Guards & Roles
+
+```typescript
+// 3 niveaux de guards à combiner
+@UseGuards(JwtAuthGuard)                          // Authentifié
+@UseGuards(JwtAuthGuard, AgencyMemberGuard)       // Membre d'une agence
+@UseGuards(JwtAuthGuard, AgencyMemberGuard, RolesGuard)
+@Roles('owner', 'manager')                        // Rôle agence spécifique
+```
+
+`AgencyMemberGuard` :
+1. Récupère `agencyId` depuis les params de route ou le JWT
+2. Vérifie que le `user.id` est dans `agency_users` avec `status = 'active'` pour cet `agencyId`
+3. Attache `request.agencyRole` pour le `RolesGuard`
+
+---
+
+### 6. Module Uploads
+
+- Utiliser **Cloudinary** (ou MinIO auto-hébergé pour la Tunisie)
+- `POST /uploads/image` → upload 1 image, retourne `{ url, public_id }`
+- Valider : type (jpg/png/webp), taille max 5MB
+- Compresser/redimensionner côté Cloudinary (transformation auto)
+- Endpoints spécifiques : `/uploads/car-photo`, `/uploads/agency-logo`, `/uploads/document` (CIN, permis)
+
+---
+
+### 7. Module Mail
+
+Utiliser **Nodemailer** + templates **Handlebars** (.hbs). Emails à implémenter :
+
+| Trigger | Template | Destinataire |
+|---|---|---|
+| Inscription | welcome.hbs | Client |
+| Vérification email | verify-email.hbs | Client |
+| Reset password | reset-password.hbs | Client |
+| Nouvelle demande | booking-request-agency.hbs | Agence |
+| Confirmation résa | booking-confirmed-client.hbs | Client |
+| Rejet résa | booking-rejected-client.hbs | Client |
+| Annulation | booking-cancelled.hbs | Client + Agence |
+| Fin de location | booking-completed.hbs + review-request | Client |
+| Invitation membre | team-invitation.hbs | Nouveau membre |
+| Nouvelle agence inscrite | agency-pending.hbs | Super admin |
+| Agence validée | agency-approved.hbs | Owner agence |
+
+---
+
+### 8. Validation & DTOs
+
+Utiliser **class-validator** + **class-transformer** sur tous les DTOs.
+
+Exemples critiques :
+```typescript
+// CreateBookingDto (marketplace)
+@IsDateString() startDate: string;
+@IsDateString() endDate: string;
+// Validator custom : endDate doit être > startDate
+// Validator custom : startDate >= aujourd'hui
+
+// CreateCarDto
+@Min(50) @Max(5000) pricePerDay: number;
+@IsEnum(CarCategory) category: CarCategory;
+@Matches(/^[0-9]{3}TU[0-9]{4}$/) registrationNumber: string; // format tunisien
+```
+
+---
+
+### 9. Endpoints Dashboard Agence complets
+
+**Prefix** : `/dashboard` — tous protégés par `JwtAuthGuard + AgencyMemberGuard`
+
+```
+Auth dashboard :
+POST   /dashboard/auth/login          ← login avec agencyId retourné dans le JWT
+
+Voitures (manager + owner) :
+GET    /dashboard/cars                 ← liste + filtres
+POST   /dashboard/cars                 ← créer
+GET    /dashboard/cars/:id
+PUT    /dashboard/cars/:id
+DELETE /dashboard/cars/:id
+PATCH  /dashboard/cars/:id/status      ← available/maintenance/inactive
+POST   /dashboard/cars/:id/photos      ← upload photos
+DELETE /dashboard/cars/:id/photos/:photoId
+
+Réservations :
+(voir section bookings ci-dessus)
+
+Membres équipe (owner seulement) :
+GET    /dashboard/team
+POST   /dashboard/team/invite          ← envoie invitation par email
+PATCH  /dashboard/team/:id/role        ← changer rôle
+PATCH  /dashboard/team/:id/suspend
+DELETE /dashboard/team/:id
+
+Disponibilités :
+GET    /dashboard/availability/:carId
+POST   /dashboard/availability/block   ← bloquer des dates manuellement
+DELETE /dashboard/availability/block/:id
+
+Paiements :
+GET    /dashboard/payments
+POST   /dashboard/payments             ← enregistrer un paiement (cash, etc.)
+GET    /dashboard/payments/:id
+
+Avis :
+GET    /dashboard/reviews
+POST   /dashboard/reviews/:id/reply    ← répondre à un avis
+PATCH  /dashboard/reviews/:id/visibility ← masquer/afficher
+
+Stats & Dashboard :
+GET    /dashboard/stats/overview       ← total résa, CA, taux occupation
+GET    /dashboard/stats/bookings-chart ← données pour graphe (par mois)
+GET    /dashboard/stats/cars           ← top voitures louées
+
+Agence (owner seulement) :
+GET    /dashboard/agency               ← infos de l'agence
+PUT    /dashboard/agency               ← modifier profil
+PUT    /dashboard/agency/logo          ← changer logo
+
+Notifications :
+GET    /dashboard/notifications
+PATCH  /dashboard/notifications/:id/read
+PATCH  /dashboard/notifications/read-all
+```
+
+---
+
+### 10. Super Admin (`/admin` — role_global = 'super_admin')
+
+```
+GET  /admin/agencies                ← liste toutes agences + statuts
+GET  /admin/agencies/:id
+PATCH /admin/agencies/:id/approve   ← valide une agence
+PATCH /admin/agencies/:id/reject    ← rejette avec raison
+PATCH /admin/agencies/:id/suspend
+GET  /admin/users                   ← tous les users
+GET  /admin/stats                   ← stats globales plateforme
+```
+
+---
+
+## Variables d'environnement (.env)
+
+```env
+# App
+NODE_ENV=development
+PORT=3000
+APP_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:3001
+
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=secret
+DB_NAME=car_rental_tn
+
+# JWT
+JWT_SECRET=your-super-secret-key-change-in-production
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_SECRET=another-super-secret-refresh-key
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Mail (SMTP)
+MAIL_HOST=smtp.mailtrap.io
+MAIL_PORT=587
+MAIL_USER=your-user
+MAIL_PASS=your-pass
+MAIL_FROM="Location Auto Tunisie <noreply@locationauto.tn>"
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+# Flouci (paiement tunisien)
+FLOUCI_APP_TOKEN=
+FLOUCI_SECRET_TOKEN=
+
+# Rate limiting
+THROTTLE_TTL=60
+THROTTLE_LIMIT=100
+```
+
+---
+
+## Packages NPM à installer
+
+```bash
+# Core
+npm i @nestjs/typeorm typeorm pg
+npm i @nestjs/jwt @nestjs/passport passport passport-jwt passport-local
+npm i @nestjs/config
+npm i @nestjs/throttler
+
+# Validation
+npm i class-validator class-transformer
+
+# Utils
+npm i bcrypt uuid slugify
+npm i @types/bcrypt @types/passport-jwt --save-dev
+
+# Mail
+npm i @nestjs-modules/mailer nodemailer handlebars
+npm i @types/nodemailer --save-dev
+
+# Upload
+npm i cloudinary multer @nestjs/platform-express
+npm i @types/multer --save-dev
+
+# Swagger (doc auto)
+npm i @nestjs/swagger swagger-ui-express
+```
+
+---
+
+## Règles de sécurité à implémenter
+
+1. **Rate limiting** : `@nestjs/throttler` — 100 req/min globalement, 5 req/min sur `/auth/login` et `/auth/forgot-password`
+2. **Helmet** : headers HTTP sécurisés
+3. **CORS** : whitelist des domaines frontend uniquement
+4. **Validation globale** : `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })` sur l'app
+5. **Sanitisation** : pas de données sensibles dans les logs (password, tokens)
+6. **Pagination obligatoire** sur toutes les listes (default limit: 20, max: 100)
+7. **Soft delete** : ajouter `deletedAt` (TypeORM `@DeleteDateColumn`) sur `cars`, `agencies`, `users` plutôt que supprimer en dur
+
+---
+
+## Génère dans cet ordre
+
+1. `DatabaseModule` + entités TypeORM complètes avec leurs relations (`@OneToMany`, `@ManyToOne`, `@ManyToMany`)
+2. `CommonModule` (decorators, guards, interceptors, pipes, filters)
+3. `AuthModule` complet (register, login, refresh, logout, forgot/reset, verify email)
+4. `AgenciesModule` (CRUD + validation super admin)
+5. `AgencyUsersModule` (invite par email, gestion rôles)
+6. `CarsModule` (CRUD tenant-scoped + upload photos)
+7. `AvailabilityModule` (vérification dispo + blocages)
+8. `BookingsModule` (marketplace + dashboard)
+9. `PaymentsModule`
+10. `ReviewsModule`
+11. `NotificationsModule`
+12. `MarketplaceModule` (search public cross-tenant)
+13. `UploadsModule` (Cloudinary)
+14. `MailModule` (Nodemailer + templates)
+15. `AdminModule` (super admin)
+16. `main.ts` avec toute la configuration globale (Helmet, CORS, Throttler, ValidationPipe, Swagger)
+
+---
+
+*Commence par me demander des précisions si tu en as besoin, sinon génère tout dans l'ordre indiqué avec des fichiers TypeScript complets et fonctionnels.*

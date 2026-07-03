@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Réservation refusée</title></head>
+<body>
+  <h1>Réservation refusée</h1>
+  <p>Bonjour {{clientName}},</p>
+  <p>Votre demande {{bookingReference}} chez {{agencyName}} pour {{carName}} a été refusée.</p>
+  {{#if rejectionReason}}
+  <p>Raison : {{rejectionReason}}</p>
+  {{/if}}
+</body>
+</html>
