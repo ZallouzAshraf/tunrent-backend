@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   OnModuleInit,
@@ -10,21 +11,24 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes, randomInt } from 'crypto';
 import { LessThan, Repository } from 'typeorm';
 import { JwtPayload } from '../../common/decorators/current-user.decorator';
 import { AgencyUserStatus, RoleGlobal } from '../../common/enums';
 import { AuditLog } from '../audit/entities/audit-log.entity';
 import { AgencyUser } from '../agency-users/entities/agency-user.entity';
+import { MailService } from '../mail/mail.service';
 import { User } from '../users/entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailCodeDto } from './dto/verify-email-code.dto';
 
 const BCRYPT_ROUNDS = 12;
-const EMAIL_VERIFICATION_EXPIRY_HOURS = 24;
+const EMAIL_VERIFICATION_EXPIRY_MINUTES = 15;
 const PASSWORD_RESET_EXPIRY_HOURS = 1;
 
 export interface RequestMeta {
@@ -79,6 +83,7 @@ export class AuthService implements OnModuleInit {
     private readonly auditLogRepo: Repository<AuditLog>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -87,7 +92,7 @@ export class AuthService implements OnModuleInit {
 
   async register(
     dto: RegisterDto,
-  ): Promise<{ message: string; user: Partial<User> }> {
+  ): Promise<{ message: string; email: string; user: Partial<User> }> {
     const email = dto.email.toLowerCase().trim();
 
     const existing = await this.userRepo.findOne({ where: { email } });
@@ -95,7 +100,7 @@ export class AuthService implements OnModuleInit {
       throw new ConflictException('Email already registered');
     }
 
-    const verificationToken = randomBytes(32).toString('hex');
+    const verificationCode = this.generateVerificationCode();
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
 
     const user = this.userRepo.create({
@@ -105,21 +110,30 @@ export class AuthService implements OnModuleInit {
       passwordHash,
       phone: dto.phone ?? null,
       roleGlobal: RoleGlobal.CLIENT,
-      emailVerificationToken: this.hashToken(verificationToken),
-      emailVerificationExpiresAt: this.addHours(EMAIL_VERIFICATION_EXPIRY_HOURS),
+      isEmailVerified: false,
+      emailVerificationToken: this.hashToken(verificationCode),
+      emailVerificationExpiresAt: this.addMinutes(
+        EMAIL_VERIFICATION_EXPIRY_MINUTES,
+      ),
     });
 
     const saved = await this.userRepo.save(user);
-    this.sendVerificationEmail(email, verificationToken);
+    await this.sendVerificationEmail(
+      email,
+      saved.firstName,
+      verificationCode,
+    );
 
     return {
       message: 'Registration successful. Please verify your email.',
+      email,
       user: this.sanitizeUser(saved),
     };
   }
 
   async login(dto: LoginDto, meta: RequestMeta = {}): Promise<SessionResult> {
     const user = await this.validateCredentials(dto.email, dto.password);
+    this.ensureClientEmailVerified(user);
     return this.createSession(user, {}, meta);
   }
 
@@ -300,6 +314,62 @@ export class AuthService implements OnModuleInit {
     return { message: 'Password reset successfully' };
   }
 
+  async verifyEmailCode(
+    dto: VerifyEmailCodeDto,
+  ): Promise<{ message: string }> {
+    const email = dto.email.toLowerCase().trim();
+    const codeHash = this.hashToken(dto.code.trim());
+    const user = await this.userRepo.findOne({ where: { email } });
+
+    if (
+      !user ||
+      !user.emailVerificationToken ||
+      user.emailVerificationToken !== codeHash ||
+      !user.emailVerificationExpiresAt ||
+      user.emailVerificationExpiresAt < new Date()
+    ) {
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+
+    if (user.isEmailVerified) {
+      return { message: 'Email already verified' };
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpiresAt = null;
+    await this.userRepo.save(user);
+
+    return { message: 'Email verified successfully' };
+  }
+
+  async resendVerificationEmail(
+    dto: ResendVerificationDto,
+  ): Promise<{ message: string }> {
+    const email = dto.email.toLowerCase().trim();
+    const user = await this.userRepo.findOne({ where: { email } });
+
+    if (user && !user.isEmailVerified) {
+      const verificationCode = this.generateVerificationCode();
+      user.emailVerificationToken = this.hashToken(verificationCode);
+      user.emailVerificationExpiresAt = this.addMinutes(
+        EMAIL_VERIFICATION_EXPIRY_MINUTES,
+      );
+      await this.userRepo.save(user);
+      await this.sendVerificationEmail(
+        user.email,
+        user.firstName,
+        verificationCode,
+      );
+    }
+
+    return {
+      message:
+        'If an unverified account exists with this email, a new code has been sent.',
+    };
+  }
+
+  /** @deprecated Use verifyEmailCode instead */
   async verifyEmail(token: string): Promise<{ message: string }> {
     const tokenHash = this.hashToken(token);
     const user = await this.userRepo.findOne({
@@ -501,10 +571,33 @@ export class AuthService implements OnModuleInit {
     return safe;
   }
 
-  private sendVerificationEmail(email: string, token: string): void {
-    const frontendUrl = this.configService.get<string>('app.frontendUrl');
-    const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
-    this.logger.log(`Verification email for ${email}: ${verifyUrl}`);
+  private ensureClientEmailVerified(user: User): void {
+    if (user.roleGlobal === RoleGlobal.CLIENT && !user.isEmailVerified) {
+      throw new ForbiddenException('EMAIL_NOT_VERIFIED');
+    }
+  }
+
+  private generateVerificationCode(): string {
+    return randomInt(100000, 1000000).toString();
+  }
+
+  private addMinutes(minutes: number): Date {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() + minutes);
+    return date;
+  }
+
+  private async sendVerificationEmail(
+    email: string,
+    firstName: string,
+    code: string,
+  ): Promise<void> {
+    await this.mailService.sendVerifyEmail(email, {
+      firstName,
+      verificationCode: code,
+      expiresMinutes: EMAIL_VERIFICATION_EXPIRY_MINUTES,
+    });
+    this.logger.log(`Verification code sent to ${email}`);
   }
 
   private sendPasswordResetEmail(email: string, token: string): void {

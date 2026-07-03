@@ -44,6 +44,13 @@ export enum AgencyPlan {
   ENTERPRISE = 'enterprise',
 }
 
+export enum PlanChangeRequestStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  CANCELLED = 'cancelled',
+}
+
 export enum AgencyUserRole {
   OWNER = 'owner',
   MANAGER = 'manager',

@@ -4,7 +4,7 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/adapters/handlebars.ad
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import appConfig from '../../config/app.config';
-import mailConfig from '../../config/mail.config';
+import mailConfig, { buildSmtpTransportOptions } from '../../config/mail.config';
 import { MailService } from './mail.service';
 
 @Module({
@@ -14,27 +14,26 @@ import { MailService } from './mail.service';
     MailerModule.forRootAsync({
       imports: [ConfigModule.forFeature(mailConfig)],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        transport: {
-          host: configService.get<string>('mail.host'),
-          port: configService.get<number>('mail.port'),
-          secure: configService.get<number>('mail.port') === 465,
-          auth: {
-            user: configService.get<string>('mail.user'),
-            pass: configService.get<string>('mail.pass'),
+      useFactory: (configService: ConfigService) => {
+        const host = configService.get<string>('mail.host')!;
+        const port = configService.get<number>('mail.port')!;
+        const user = configService.get<string>('mail.user')!;
+        const pass = configService.get<string>('mail.pass')!;
+
+        return {
+          transport: buildSmtpTransportOptions({ host, port, user, pass }),
+          defaults: {
+            from: configService.get<string>('mail.from'),
           },
-        },
-        defaults: {
-          from: configService.get<string>('mail.from'),
-        },
-        template: {
-          dir: join(__dirname, 'templates'),
-          adapter: new HandlebarsAdapter(),
-          options: {
-            strict: true,
+          template: {
+            dir: join(__dirname, 'templates'),
+            adapter: new HandlebarsAdapter(),
+            options: {
+              strict: true,
+            },
           },
-        },
-      }),
+        };
+      },
     }),
   ],
   providers: [MailService],

@@ -1,5 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
+import * as nodemailer from 'nodemailer';
+import { buildSmtpTransportOptions } from '../../config/mail.config';
 import {
   AgencyApprovedMailContext,
   AgencyPendingMailContext,
@@ -15,10 +18,45 @@ import {
 } from './interfaces/mail-context.interface';
 
 @Injectable()
-export class MailService {
+export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
 
-  constructor(private readonly mailerService: MailerService) {}
+  constructor(
+    private readonly mailerService: MailerService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  async onModuleInit(): Promise<void> {
+    if (!this.configService.get<boolean>('mail.enabled')) {
+      this.logger.warn('Mail désactivé (MAIL_ENABLED=false)');
+      return;
+    }
+
+    if (!this.configService.get<boolean>('mail.configured')) {
+      this.logger.warn(
+        'SMTP non configuré — renseignez MAIL_USER et MAIL_PASS dans .env puis lancez npm run mail:test',
+      );
+      return;
+    }
+
+    const host = this.configService.get<string>('mail.host')!;
+    const port = this.configService.get<number>('mail.port')!;
+    const user = this.configService.get<string>('mail.user')!;
+    const pass = this.configService.get<string>('mail.pass')!;
+
+    try {
+      const transport = nodemailer.createTransport(
+        buildSmtpTransportOptions({ host, port, user, pass }),
+      );
+      await transport.verify();
+      this.logger.log(`SMTP prêt (${host}:${port})`);
+    } catch (error) {
+      this.logger.error(
+        `SMTP inaccessible (${host}:${port}) — vérifiez MAIL_USER/MAIL_PASS avec npm run mail:test`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
 
   async sendWelcome(to: string, context: WelcomeMailContext): Promise<void> {
     await this.send(to, 'Bienvenue sur TunRent', 'welcome', context);
@@ -150,6 +188,11 @@ export class MailService {
     template: string,
     context: object,
   ): Promise<void> {
+    if (!this.configService.get<boolean>('mail.enabled')) {
+      this.logger.warn(`Mail disabled — skipped "${subject}" to ${to}`);
+      return;
+    }
+
     try {
       await this.mailerService.sendMail({
         to,
@@ -162,7 +205,6 @@ export class MailService {
         `Failed to send email "${subject}" to ${to}`,
         error instanceof Error ? error.stack : String(error),
       );
-      throw error;
     }
   }
 }

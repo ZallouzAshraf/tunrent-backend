@@ -23,6 +23,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { StatsModule } from './modules/stats/stats.module';
+import { BillingModule } from './modules/billing/billing.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { CommonModule } from './common/common.module';
 import { DatabaseModule } from './database/database.module';
@@ -56,6 +57,7 @@ import { DatabaseModule } from './database/database.module';
     PaymentsModule,
     ReviewsModule,
     StatsModule,
+    BillingModule,
   ],
   controllers: [AppController],
   providers: [

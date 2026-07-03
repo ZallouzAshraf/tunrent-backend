@@ -26,6 +26,8 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { VerifyEmailCodeDto } from './dto/verify-email-code.dto';
 
 function requestMeta(req: Request) {
   return {
@@ -135,6 +137,22 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  verifyEmailCode(@Body() dto: VerifyEmailCodeDto) {
+    return this.authService.verifyEmailCode(dto);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerificationEmail(dto);
   }
 
   @Public()

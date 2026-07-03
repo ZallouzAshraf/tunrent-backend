@@ -22,6 +22,11 @@ export class ClientBookingsController {
     return this.bookingsService.findClientBookings(user.sub);
   }
 
+  @Get(':id')
+  findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.bookingsService.findClientBookingById(user.sub, id);
+  }
+
   @Delete(':id')
   cancel(
     @CurrentUser() user: JwtPayload,

@@ -25,6 +25,7 @@ import { AvailabilityService } from '../availability/availability.service';
 import { Car } from '../cars/entities/car.entity';
 import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { User } from '../users/entities/user.entity';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { BookingQueryDto } from './dto/booking-query.dto';
 import { CreateMarketplaceBookingDto } from './dto/create-marketplace-booking.dto';
@@ -63,6 +64,8 @@ export class BookingsService {
     private readonly carRepo: Repository<Car>,
     @InjectRepository(Agency)
     private readonly agencyRepo: Repository<Agency>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
     private readonly availabilityService: AvailabilityService,
     private readonly mailService: MailService,
     private readonly notificationsService: NotificationsService,
@@ -453,6 +456,13 @@ export class BookingsService {
   }
 
   async findClientBookings(userId: string): Promise<Booking[]> {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.claimGuestBookingsForUser(userId, user.email);
+
     return this.bookingRepo.find({
       where: { clientUserId: userId },
       relations: { car: true, agency: true },
@@ -460,11 +470,11 @@ export class BookingsService {
     });
   }
 
-  async cancelClientBooking(
+  async findClientBookingById(
     userId: string,
     id: string,
-    cancellationReason?: string,
   ): Promise<Booking> {
+    await this.findClientBookings(userId);
     const booking = await this.bookingRepo.findOne({
       where: { id, clientUserId: userId },
       relations: { car: true, agency: true },
@@ -473,6 +483,30 @@ export class BookingsService {
     if (!booking) {
       throw new NotFoundException('Booking not found');
     }
+
+    return booking;
+  }
+
+  /** Link guest bookings (same email) to the authenticated account. */
+  private async claimGuestBookingsForUser(
+    userId: string,
+    email: string,
+  ): Promise<void> {
+    await this.bookingRepo
+      .createQueryBuilder()
+      .update(Booking)
+      .set({ clientUserId: userId })
+      .where('client_user_id IS NULL')
+      .andWhere('LOWER(client_email) = LOWER(:email)', { email })
+      .execute();
+  }
+
+  async cancelClientBooking(
+    userId: string,
+    id: string,
+    cancellationReason?: string,
+  ): Promise<Booking> {
+    const booking = await this.findClientBookingById(userId, id);
 
     if (
       ![BookingStatus.PENDING, BookingStatus.CONFIRMED].includes(booking.status)

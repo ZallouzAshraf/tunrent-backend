@@ -12,6 +12,7 @@ import { Review } from '../modules/reviews/entities/review.entity';
 import { Notification } from '../modules/notifications/entities/notification.entity';
 import { CarAvailabilityBlock } from '../modules/availability/entities/car-availability-block.entity';
 import { AuditLog } from '../modules/audit/entities/audit-log.entity';
+import { PlanChangeRequest } from '../modules/billing/entities/plan-change-request.entity';
 import { RefreshToken } from '../modules/auth/entities/refresh-token.entity';
 
 const entities = [
@@ -26,6 +27,7 @@ const entities = [
   CarAvailabilityBlock,
   AuditLog,
   RefreshToken,
+  PlanChangeRequest,
 ];
 
 @Module({

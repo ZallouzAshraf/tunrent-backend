@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import jwtConfig from '../../config/jwt.config';
 import { AuditLog } from '../audit/entities/audit-log.entity';
 import { AgencyUser } from '../agency-users/entities/agency-user.entity';
+import { MailModule } from '../mail/mail.module';
 import { User } from '../users/entities/user.entity';
 import {
   AuthController,
@@ -18,6 +19,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, AgencyUser, RefreshToken, AuditLog]),
+    MailModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     ConfigModule.forFeature(jwtConfig),
     JwtModule.registerAsync({

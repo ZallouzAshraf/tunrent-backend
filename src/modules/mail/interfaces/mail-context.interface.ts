@@ -5,7 +5,8 @@ export interface WelcomeMailContext {
 
 export interface VerifyEmailMailContext {
   firstName: string;
-  verifyUrl: string;
+  verificationCode: string;
+  expiresMinutes: number;
 }
 
 export interface ResetPasswordMailContext {

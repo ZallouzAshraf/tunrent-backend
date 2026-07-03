@@ -186,6 +186,15 @@ export class AgenciesService {
     return { message: 'Agency deleted successfully' };
   }
 
+  private resolveInitialAgencyStatus(): AgencyStatus {
+    const nodeEnv = this.configService.get<string>('app.nodeEnv');
+    // En dev, activer directement pour la marketplace (prod = validation admin)
+    if (nodeEnv === 'development') {
+      return AgencyStatus.ACTIVE;
+    }
+    return AgencyStatus.PENDING_VALIDATION;
+  }
+
   private async saveAgency(dto: CreateAgencyDto, slug: string): Promise<Agency> {
     const agency = this.agencyRepo.create({
       name: dto.name.trim(),
@@ -205,7 +214,7 @@ export class AgenciesService {
       patenteNumber: dto.patenteNumber ?? null,
       patenteUrl: dto.patenteUrl ?? null,
       rib: dto.rib ?? null,
-      status: AgencyStatus.PENDING_VALIDATION,
+      status: this.resolveInitialAgencyStatus(),
     });
 
     return this.agencyRepo.save(agency);

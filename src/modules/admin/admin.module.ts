@@ -5,6 +5,7 @@ import { AgencyUser } from '../agency-users/entities/agency-user.entity';
 import { Agency } from '../agencies/entities/agency.entity';
 import { Booking } from '../bookings/entities/booking.entity';
 import { Car } from '../cars/entities/car.entity';
+import { BillingModule } from '../billing/billing.module';
 import { MailModule } from '../mail/mail.module';
 import { User } from '../users/entities/user.entity';
 import { AdminController } from './admin.controller';
@@ -21,6 +22,7 @@ import { AdminService } from './admin.service';
     ]),
     AuthModule,
     MailModule,
+    BillingModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],
