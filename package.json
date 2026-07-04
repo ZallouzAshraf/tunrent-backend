@@ -23,7 +23,11 @@
     "seed:activate-agency": "ts-node -r tsconfig-paths/register src/database/seeds/activate-agency.ts",
     "seed:admin": "ts-node -r tsconfig-paths/register src/database/seeds/seed-admin.ts",
     "mail:test": "ts-node -r tsconfig-paths/register src/scripts/test-mail.ts",
-    "mail:preview": "ts-node -r tsconfig-paths/register src/scripts/mail-preview.ts"
+    "mail:preview": "ts-node -r tsconfig-paths/register src/scripts/mail-preview.ts",
+    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
+    "migration:run": "npm run typeorm -- migration:run -d src/database/data-source.ts",
+    "migration:revert": "npm run typeorm -- migration:revert -d src/database/data-source.ts",
+    "migration:generate": "npm run typeorm -- migration:generate -d src/database/data-source.ts"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.3.7",

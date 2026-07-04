@@ -15,6 +15,10 @@ import {
   AgencyUserStatus,
   RoleGlobal,
 } from '../../common/enums';
+import {
+  assertAgencyCanOperate,
+  getEffectivePlanLimits,
+} from '../../common/utils/agency-plan.util';
 import { Agency } from '../agencies/entities/agency.entity';
 import { MailService } from '../mail/mail.service';
 import { User } from '../users/entities/user.entity';
@@ -52,7 +56,9 @@ export class AgencyUsersService {
       throw new NotFoundException('Agency not found');
     }
 
-    await this.assertTeamCapacity(agencyId, agency.maxUsers);
+    assertAgencyCanOperate(agency);
+    const { maxUsers } = getEffectivePlanLimits(agency);
+    await this.assertTeamCapacity(agencyId, maxUsers);
 
     const email = dto.email.toLowerCase().trim();
     let user = await this.userRepo.findOne({ where: { email } });

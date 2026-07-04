@@ -15,6 +15,7 @@ import { createHash, randomBytes, randomInt } from 'crypto';
 import { LessThan, Repository } from 'typeorm';
 import { JwtPayload } from '../../common/decorators/current-user.decorator';
 import { AgencyUserStatus, RoleGlobal } from '../../common/enums';
+import { isAgencyOperational } from '../../common/utils/agency-plan.util';
 import { AuditLog } from '../audit/entities/audit-log.entity';
 import { AgencyUser } from '../agency-users/entities/agency-user.entity';
 import { MailService } from '../mail/mail.service';
@@ -149,24 +150,28 @@ export class AuthService implements OnModuleInit {
       order: { createdAt: 'ASC' },
     });
 
-    if (memberships.length === 0) {
+    const activeMemberships = memberships.filter((m) =>
+      isAgencyOperational(m.agency),
+    );
+
+    if (activeMemberships.length === 0) {
       throw new UnauthorizedException(
         'You are not an active member of any agency',
       );
     }
 
-    let membership = memberships[0];
+    let membership = activeMemberships[0];
 
     if (dto.agencyId) {
-      const selected = memberships.find((m) => m.agencyId === dto.agencyId);
+      const selected = activeMemberships.find((m) => m.agencyId === dto.agencyId);
       if (!selected) {
         throw new UnauthorizedException('Not an active member of this agency');
       }
       membership = selected;
-    } else if (memberships.length > 1) {
+    } else if (activeMemberships.length > 1) {
       return {
         requiresAgencySelection: true,
-        agencies: memberships.map((m) => ({
+        agencies: activeMemberships.map((m) => ({
           id: m.agencyId,
           name: m.agency.name,
           slug: m.agency.slug,

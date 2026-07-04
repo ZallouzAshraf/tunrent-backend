@@ -8,6 +8,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { CarStatus } from '../../common/enums';
 import {
+  assertAgencyCanOperate,
+  getEffectivePlanLimits,
+} from '../../common/utils/agency-plan.util';
+import {
   buildPaginatedResult,
   normalizePagination,
   PaginatedResult,
@@ -91,13 +95,19 @@ export class CarsService {
       throw new NotFoundException('Agency not found');
     }
 
+    assertAgencyCanOperate(agency);
+
+    const { maxCars, expired, plan } = getEffectivePlanLimits(agency);
     const currentCount = await this.carRepo.count({
       where: { agencyId },
     });
 
-    if (currentCount >= agency.maxCars) {
+    if (currentCount >= maxCars) {
+      const hint = expired
+        ? ' Your paid plan has expired — upgrade or renew to add more cars.'
+        : '';
       throw new BadRequestException(
-        `Car limit reached (${agency.maxCars} max for current plan)`,
+        `Car limit reached (${maxCars} max for ${plan} plan).${hint}`,
       );
     }
 

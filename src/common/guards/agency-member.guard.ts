@@ -7,7 +7,9 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AgencyUser } from '../../modules/agency-users/entities/agency-user.entity';
+import { Agency } from '../../modules/agencies/entities/agency.entity';
 import { AgencyUserStatus } from '../enums';
+import { assertAgencyCanOperate } from '../utils/agency-plan.util';
 import { AuthenticatedRequest } from '../decorators/current-user.decorator';
 
 @Injectable()
@@ -15,6 +17,8 @@ export class AgencyMemberGuard implements CanActivate {
   constructor(
     @InjectRepository(AgencyUser)
     private readonly agencyUserRepo: Repository<AgencyUser>,
+    @InjectRepository(Agency)
+    private readonly agencyRepo: Repository<Agency>,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -45,6 +49,13 @@ export class AgencyMemberGuard implements CanActivate {
     if (!membership) {
       throw new ForbiddenException('Not a member of this agency');
     }
+
+    const agency = await this.agencyRepo.findOne({ where: { id: agencyId } });
+    if (!agency) {
+      throw new ForbiddenException('Agency not found');
+    }
+
+    assertAgencyCanOperate(agency);
 
     request.agencyId = agencyId;
     request.agencyRole = membership.role;

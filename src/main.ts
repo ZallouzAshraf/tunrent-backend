@@ -1,16 +1,22 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { validateEnvironment } from './config/env.validation';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  const configService = app.get(ConfigService);
+  validateEnvironment();
 
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const configService = app.get(ConfigService);
+  const isProd = configService.get<string>('app.nodeEnv') === 'production';
+
+  app.set('trust proxy', 1);
   app.use(helmet());
   app.use(cookieParser());
 
@@ -32,21 +38,25 @@ async function bootstrap() {
 
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('TunRent API')
-    .setDescription('Plateforme SaaS Multi-Tenant de Location de Voitures — Tunisie')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  if (!isProd) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('TunRent API')
+      .setDescription('Plateforme SaaS Multi-Tenant de Location de Voitures — Tunisie')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   const port = configService.get<number>('app.port') || 3000;
   await app.listen(port);
 
   console.log(`TunRent API running on http://localhost:${port}`);
-  console.log(`Swagger docs: http://localhost:${port}/api/docs`);
+  if (!isProd) {
+    console.log(`Swagger docs: http://localhost:${port}/api/docs`);
+  }
 }
 
 bootstrap();

@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AgencyUser } from '../modules/agency-users/entities/agency-user.entity';
+import { Agency } from '../modules/agencies/entities/agency.entity';
 import { AuditLog } from '../modules/audit/entities/audit-log.entity';
 import { AgencyMemberGuard } from './guards/agency-member.guard';
 import { RolesGuard } from './guards/roles.guard';
@@ -8,7 +9,7 @@ import { AuditInterceptor } from './interceptors/audit.interceptor';
 
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([AgencyUser, AuditLog])],
+  imports: [TypeOrmModule.forFeature([AgencyUser, Agency, AuditLog])],
   providers: [AgencyMemberGuard, RolesGuard, AuditInterceptor],
   exports: [
     TypeOrmModule,

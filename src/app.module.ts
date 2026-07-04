@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -27,6 +25,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { ClientModule } from './modules/client/client.module';
 import { LandingModule } from './modules/landing/landing.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
+import { HealthModule } from './modules/health/health.module';
 import { CommonModule } from './common/common.module';
 import { DatabaseModule } from './database/database.module';
 
@@ -45,6 +44,7 @@ import { DatabaseModule } from './database/database.module';
     }),
     DatabaseModule,
     CommonModule,
+    HealthModule,
     AuthModule,
     AgenciesModule,
     AgencyUsersModule,
@@ -63,9 +63,7 @@ import { DatabaseModule } from './database/database.module';
     ClientModule,
     LandingModule,
   ],
-  controllers: [AppController],
   providers: [
-    AppService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
