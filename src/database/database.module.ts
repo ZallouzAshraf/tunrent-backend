@@ -42,6 +42,7 @@ const entities = [
         username: configService.get<string>('database.username'),
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.name'),
+        ssl: configService.get<boolean | { rejectUnauthorized: false }>('database.ssl'),
         entities,
         synchronize: configService.get<string>('app.nodeEnv') !== 'production',
         logging: configService.get<string>('app.nodeEnv') === 'development',
