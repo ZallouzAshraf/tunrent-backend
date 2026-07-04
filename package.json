@@ -22,7 +22,8 @@
     "seed:car-images": "ts-node -r tsconfig-paths/register src/database/seeds/seed-car-images.ts",
     "seed:activate-agency": "ts-node -r tsconfig-paths/register src/database/seeds/activate-agency.ts",
     "seed:admin": "ts-node -r tsconfig-paths/register src/database/seeds/seed-admin.ts",
-    "mail:test": "ts-node -r tsconfig-paths/register src/scripts/test-mail.ts"
+    "mail:test": "ts-node -r tsconfig-paths/register src/scripts/test-mail.ts",
+    "mail:preview": "ts-node -r tsconfig-paths/register src/scripts/mail-preview.ts"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.3.7",

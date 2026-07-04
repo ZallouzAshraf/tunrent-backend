@@ -1,15 +1,25 @@
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Vérification email</title></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
-  <h1>Bonjour {{firstName}},</h1>
-  <p>Voici votre code de vérification TunRent :</p>
-  <p style="font-size: 28px; font-weight: bold; letter-spacing: 6px; margin: 24px 0;">
-    {{verificationCode}}
+{{#> layout
+  title="Vérification email"
+  preheader="Votre code de vérification TunRent"
+  badge="Sécurité"
+  badgeBg="#eff6ff"
+  badgeColor="#1e3a5f"
+  heading=(concat "Bonjour " firstName ",")
+  subheading="Utilisez le code ci-dessous pour activer votre compte TunRent."
+}}
+  <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#475569;">
+    Saisissez ce code sur la page de vérification :
   </p>
-  <p>Ce code expire dans {{expiresMinutes}} minutes.</p>
-  <p style="color: #666; font-size: 13px;">
-    Si vous n'avez pas créé de compte, ignorez cet email.
+
+  {{> code-box code=verificationCode}}
+
+  <p style="margin:0;font-size:14px;line-height:1.6;color:#64748b;text-align:center;">
+    Ce code expire dans <strong style="color:#1a1a2e;">{{expiresMinutes}} minutes</strong>.
   </p>
-</body>
-</html>
+
+  {{> note
+    bg="#f8fafc"
+    border="#94a3b8"
+    text="Si vous n'avez pas créé de compte TunRent, vous pouvez ignorer cet email en toute sécurité."
+  }}
+{{/layout}}

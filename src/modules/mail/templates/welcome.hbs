@@ -1,9 +1,27 @@
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Bienvenue</title></head>
-<body>
-  <h1>Bienvenue {{firstName}} !</h1>
-  <p>Merci de vous être inscrit sur TunRent.</p>
-  <p><a href="{{frontendUrl}}">Accéder à la plateforme</a></p>
-</body>
-</html>
+{{#> layout
+  title="Bienvenue sur TunRent"
+  preheader="Votre compte est activé — bienvenue chez TunRent"
+  badge="Bienvenue"
+  badgeBg="#ecfdf5"
+  badgeColor="#047857"
+  heading=(concat "Bienvenue " firstName " !")
+  subheading="Votre email est confirmé. Vous pouvez dès maintenant réserver auprès d'agences vérifiées en Tunisie."
+}}
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:8px 0 24px;">
+    <tr>
+      <td style="padding:16px 18px;background-color:#f8fafc;border-radius:10px;font-size:14px;line-height:1.7;color:#475569;">
+        ✓ Parcourez des centaines de véhicules<br />
+        ✓ Comparez les prix en toute transparence<br />
+        ✓ Réservez en quelques clics
+      </td>
+    </tr>
+  </table>
+
+  {{> button href=frontendUrl label="Explorer les voitures"}}
+
+  {{> note
+    bg="#f0f9ff"
+    border="#1e3a5f"
+    text="Conseil : complétez votre profil et ajoutez vos documents pour accélérer vos prochaines réservations."
+  }}
+{{/layout}}

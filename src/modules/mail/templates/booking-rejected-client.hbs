@@ -1,12 +1,31 @@
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Réservation refusée</title></head>
-<body>
-  <h1>Réservation refusée</h1>
-  <p>Bonjour {{clientName}},</p>
-  <p>Votre demande {{bookingReference}} chez {{agencyName}} pour {{carName}} a été refusée.</p>
+{{#> layout
+  title="Réservation refusée"
+  preheader=(concat "Demande " bookingReference " non acceptée")
+  badge="Non acceptée"
+  badgeBg="#fef2f2"
+  badgeColor="#dc2626"
+  heading="Demande non acceptée"
+  subheading=(concat "Bonjour " clientName ", votre demande n'a pas pu être confirmée par " agencyName ".")
+}}
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:8px 0 24px;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+    {{> detail-row label="Référence" value=bookingReference}}
+    {{> detail-row label="Véhicule" value=carName}}
+    {{> detail-row label="Agence" value=agencyName}}
+  </table>
+
   {{#if rejectionReason}}
-  <p>Raison : {{rejectionReason}}</p>
+  {{> note
+    bg="#fef2f2"
+    border="#dc2626"
+    text=(concat "<strong>Motif :</strong> " rejectionReason)
+  }}
   {{/if}}
-</body>
-</html>
+
+  {{> button href=frontendUrl label="Rechercher une autre voiture"}}
+
+  {{> note
+    bg="#f8fafc"
+    border="#94a3b8"
+    text="De nombreux autres véhicules sont disponibles sur TunRent. Essayez d'autres dates ou une autre agence."
+  }}
+{{/layout}}

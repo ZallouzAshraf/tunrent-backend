@@ -1,9 +1,29 @@
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Agence approuvée</title></head>
-<body>
-  <h1>Félicitations {{ownerName}} !</h1>
-  <p>Votre agence <strong>{{agencyName}}</strong> a été approuvée.</p>
-  <p><a href="{{dashboardUrl}}">Accéder au tableau de bord</a></p>
-</body>
-</html>
+{{#> layout
+  title="Agence approuvée"
+  preheader=(concat agencyName " est maintenant active sur TunRent")
+  badge="Approuvée"
+  badgeBg="#ecfdf5"
+  badgeColor="#047857"
+  heading=(concat "Félicitations " ownerName " !")
+  subheading=(concat "Votre agence <strong>" agencyName "</strong> est désormais visible sur la marketplace TunRent.")
+}}
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:8px 0 24px;">
+    <tr>
+      <td style="padding:18px 20px;background-color:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;font-size:14px;line-height:1.7;color:#166534;">
+        <strong>Prochaines étapes :</strong><br />
+        1. Complétez le profil de votre agence<br />
+        2. Ajoutez vos véhicules et photos<br />
+        3. Configurez vos disponibilités<br />
+        4. Commencez à recevoir des réservations
+      </td>
+    </tr>
+  </table>
+
+  {{> button href=dashboardUrl label="Accéder au tableau de bord"}}
+
+  {{> note
+    bg="#f0f9ff"
+    border="#1e3a5f"
+    text="Notre équipe reste disponible pour vous accompagner dans la prise en main de la plateforme."
+  }}
+{{/layout}}

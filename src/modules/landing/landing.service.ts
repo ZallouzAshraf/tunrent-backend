@@ -1,6 +1,7 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
+import { resolveAdminRecipient } from '../../config/mail.config';
 import { ContactDto } from './dto/contact.dto';
 
 @Injectable()
@@ -13,10 +14,10 @@ export class LandingService {
   ) {}
 
   async submitContact(dto: ContactDto): Promise<{ message: string }> {
-    const recipient =
-      this.configService.get<string>('mail.adminEmail') ||
-      this.configService.get<string>('mail.from')?.match(/<([^>]+)>/)?.[1] ||
-      'contact@tunrent.tn';
+    const recipient = resolveAdminRecipient(
+      this.configService.get<string>('mail.adminEmail'),
+      this.configService.get<string>('mail.from'),
+    );
 
     const sent = await this.mailService.sendContactMessage(recipient, {
       name: dto.name.trim(),

@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import appConfig from '../../config/app.config';
 import mailConfig, { buildSmtpTransportOptions } from '../../config/mail.config';
+import { registerMailTemplatePartials } from './mail-templates.setup';
 import { MailService } from './mail.service';
 
 @Module({
@@ -15,6 +16,9 @@ import { MailService } from './mail.service';
       imports: [ConfigModule.forFeature(mailConfig)],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
+        const templatesDir = join(__dirname, 'templates');
+        registerMailTemplatePartials(templatesDir);
+
         const host = configService.get<string>('mail.host')!;
         const port = configService.get<number>('mail.port')!;
         const user = configService.get<string>('mail.user')!;
@@ -26,7 +30,7 @@ import { MailService } from './mail.service';
             from: configService.get<string>('mail.from'),
           },
           template: {
-            dir: join(__dirname, 'templates'),
+            dir: templatesDir,
             adapter: new HandlebarsAdapter(),
             options: {
               strict: true,

@@ -2,7 +2,12 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 import * as nodemailer from 'nodemailer';
-import { buildSmtpTransportOptions } from '../../config/mail.config';
+import {
+  buildSmtpTransportOptions,
+  getMailProviderLabel,
+  resolveAdminRecipient,
+  type MailProvider,
+} from '../../config/mail.config';
 import {
   AgencyApprovedMailContext,
   AgencyPendingMailContext,
@@ -28,6 +33,9 @@ export class MailService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
+    const provider = this.configService.get<MailProvider>('mail.provider')!;
+    const providerLabel = getMailProviderLabel(provider);
+
     if (!this.configService.get<boolean>('mail.enabled')) {
       this.logger.warn('Mail désactivé (MAIL_ENABLED=false)');
       return;
@@ -35,8 +43,9 @@ export class MailService implements OnModuleInit {
 
     if (!this.configService.get<boolean>('mail.configured')) {
       this.logger.warn(
-        'SMTP non configuré — renseignez MAIL_USER et MAIL_PASS dans .env puis lancez npm run mail:test',
+        `SMTP non configuré [${provider}] — renseignez MAIL_USER + MAIL_PASS (clé SMTP Brevo) puis npm run mail:test`,
       );
+      this.logger.warn(`Provider attendu : ${providerLabel}`);
       return;
     }
 
@@ -44,16 +53,19 @@ export class MailService implements OnModuleInit {
     const port = this.configService.get<number>('mail.port')!;
     const user = this.configService.get<string>('mail.user')!;
     const pass = this.configService.get<string>('mail.pass')!;
+    const from = this.configService.get<string>('mail.from')!;
 
     try {
       const transport = nodemailer.createTransport(
         buildSmtpTransportOptions({ host, port, user, pass }),
       );
       await transport.verify();
-      this.logger.log(`SMTP prêt (${host}:${port})`);
+      this.logger.log(
+        `SMTP prêt [${provider}] ${host}:${port} — expéditeur: ${from}`,
+      );
     } catch (error) {
       this.logger.error(
-        `SMTP inaccessible (${host}:${port}) — vérifiez MAIL_USER/MAIL_PASS avec npm run mail:test`,
+        `SMTP inaccessible [${provider}] (${host}:${port}) — npm run mail:test`,
         error instanceof Error ? error.stack : String(error),
       );
     }
@@ -188,6 +200,13 @@ export class MailService implements OnModuleInit {
     to: string,
     context: ContactMessageMailContext,
   ): Promise<boolean> {
+    if (!this.configService.get<boolean>('mail.configured')) {
+      this.logger.warn(
+        `SMTP non configuré — contact ignoré de ${context.email}`,
+      );
+      return false;
+    }
+
     if (!this.configService.get<boolean>('mail.enabled')) {
       this.logger.warn(`Mail disabled — skipped contact from ${context.email}`);
       return false;
@@ -199,7 +218,7 @@ export class MailService implements OnModuleInit {
         replyTo: context.email,
         subject: `[TunRent Contact] ${context.subject}`,
         template: 'contact-message',
-        context,
+        context: this.enrichMailContext(context),
       });
       return true;
     } catch (error) {
@@ -217,6 +236,13 @@ export class MailService implements OnModuleInit {
     template: string,
     context: object,
   ): Promise<void> {
+    if (!this.configService.get<boolean>('mail.configured')) {
+      this.logger.warn(
+        `SMTP non configuré — email ignoré "${subject}" pour ${to}`,
+      );
+      return;
+    }
+
     if (!this.configService.get<boolean>('mail.enabled')) {
       this.logger.warn(`Mail disabled — skipped "${subject}" to ${to}`);
       return;
@@ -227,7 +253,7 @@ export class MailService implements OnModuleInit {
         to,
         subject,
         template,
-        context,
+        context: this.enrichMailContext(context),
       });
     } catch (error) {
       this.logger.error(
@@ -235,5 +261,21 @@ export class MailService implements OnModuleInit {
         error instanceof Error ? error.stack : String(error),
       );
     }
+  }
+
+  private enrichMailContext<T extends object>(context: T): T & {
+    frontendUrl: string;
+    supportEmail: string;
+    currentYear: number;
+  } {
+    return {
+      ...context,
+      frontendUrl: this.configService.get<string>('app.frontendUrl')!,
+      supportEmail: resolveAdminRecipient(
+        this.configService.get<string>('mail.adminEmail'),
+        this.configService.get<string>('mail.from'),
+      ),
+      currentYear: new Date().getFullYear(),
+    };
   }
 }

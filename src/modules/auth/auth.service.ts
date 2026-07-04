@@ -282,7 +282,7 @@ export class AuthService implements OnModuleInit {
       user.passwordResetToken = this.hashToken(resetToken);
       user.passwordResetExpiresAt = this.addHours(PASSWORD_RESET_EXPIRY_HOURS);
       await this.userRepo.save(user);
-      this.sendPasswordResetEmail(email, resetToken);
+      await this.sendPasswordResetEmail(user.email, user.firstName, resetToken);
     }
 
     return {
@@ -339,6 +339,12 @@ export class AuthService implements OnModuleInit {
     user.emailVerificationToken = null;
     user.emailVerificationExpiresAt = null;
     await this.userRepo.save(user);
+
+    const frontendUrl = this.configService.get<string>('app.frontendUrl')!;
+    await this.mailService.sendWelcome(user.email, {
+      firstName: user.firstName,
+      frontendUrl,
+    });
 
     return { message: 'Email verified successfully' };
   }
@@ -600,9 +606,17 @@ export class AuthService implements OnModuleInit {
     this.logger.log(`Verification code sent to ${email}`);
   }
 
-  private sendPasswordResetEmail(email: string, token: string): void {
+  private async sendPasswordResetEmail(
+    email: string,
+    firstName: string,
+    token: string,
+  ): Promise<void> {
     const frontendUrl = this.configService.get<string>('app.frontendUrl');
-    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
-    this.logger.log(`Password reset email for ${email}: ${resetUrl}`);
+    const resetUrl = `${frontendUrl}/reset-password/${token}`;
+    await this.mailService.sendResetPassword(email, {
+      firstName,
+      resetUrl,
+    });
+    this.logger.log(`Password reset email sent to ${email}`);
   }
 }

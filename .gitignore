@@ -4,6 +4,7 @@ node_modules/
 # build output
 dist/
 build/
+mail-preview.html
 
 # environment (keep .env.example for the team)
 .env

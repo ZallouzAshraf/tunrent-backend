@@ -1,12 +1,24 @@
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Agence en attente</title></head>
-<body>
-  <h1>Nouvelle agence en attente de validation</h1>
-  <p>L'agence <strong>{{agencyName}}</strong> ({{city}}) vient de s'inscrire.</p>
-  <ul>
-    <li>Propriétaire : {{ownerName}} ({{ownerEmail}})</li>
-  </ul>
-  <p><a href="{{adminDashboardUrl}}">Examiner la demande</a></p>
-</body>
-</html>
+{{#> layout
+  title="Agence en attente"
+  preheader=(concat "Nouvelle agence : " agencyName)
+  badge="Admin"
+  badgeBg="#fef3c7"
+  badgeColor="#b45309"
+  heading="Nouvelle agence à valider"
+  subheading="Une demande d'inscription partenaire nécessite votre attention."
+}}
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:8px 0 24px;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+    {{> detail-row label="Agence" value=agencyName}}
+    {{> detail-row label="Ville" value=city}}
+    {{> detail-row label="Responsable" value=ownerName}}
+    {{> detail-row label="Email" value=ownerEmail}}
+  </table>
+
+  {{> button href=adminDashboardUrl label="Examiner la demande"}}
+
+  {{> note
+    bg="#fffbeb"
+    border="#d97706"
+    text="Validez ou rejetez la demande sous 48 h pour maintenir une bonne expérience partenaire."
+  }}
+{{/layout}}

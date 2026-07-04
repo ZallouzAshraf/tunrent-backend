@@ -1,12 +1,28 @@
-<p>Nouveau message depuis le formulaire de contact TunRent.</p>
+{{#> layout
+  title="Message contact"
+  preheader=(concat "Contact : " subject)
+  badge="Contact"
+  badgeBg="#eff6ff"
+  badgeColor="#1e3a5f"
+  heading="Nouveau message reçu"
+  subheading="Un visiteur a rempli le formulaire de contact sur tunrent.tn."
+}}
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:8px 0 24px;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+    {{> detail-row label="Nom" value=name}}
+    {{> detail-row label="Email" value=(concat "<a href=\"mailto:" email "\" style=\"color:#1e3a5f;text-decoration:none;\">" email "</a>")}}
+    {{> detail-row label="Sujet" value=subject}}
+  </table>
 
-<ul>
-  <li><strong>Nom :</strong> {{name}}</li>
-  <li><strong>Email :</strong> {{email}}</li>
-  <li><strong>Sujet :</strong> {{subject}}</li>
-</ul>
+  <p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;">Message</p>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 20px;">
+    <tr>
+      <td style="padding:18px 20px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:10px;font-size:15px;line-height:1.7;color:#1a1a2e;white-space:pre-wrap;">{{message}}</td>
+    </tr>
+  </table>
 
-<p><strong>Message :</strong></p>
-<p>{{message}}</p>
-
-<p style="color:#666;font-size:12px;">Répondre directement à {{email}}</p>
+  {{> note
+    bg="#f0f9ff"
+    border="#1e3a5f"
+    text=(concat "Répondez directement à <a href=\"mailto:" email "\" style=\"color:#1e3a5f;font-weight:600;\">" email "</a> pour contacter l'expéditeur.")
+  }}
+{{/layout}}

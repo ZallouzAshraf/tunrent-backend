@@ -2,6 +2,8 @@ import { registerAs } from '@nestjs/config';
 
 const PLACEHOLDER_MARKERS = ['your-user', 'your-pass', 'changeme'];
 
+export type MailProvider = 'brevo' | 'mailtrap' | 'gmail' | 'smtp';
+
 export interface SmtpTransportConfig {
   host: string;
   port: number;
@@ -9,12 +11,101 @@ export interface SmtpTransportConfig {
   pass: string;
 }
 
+export interface ResolvedMailConfig extends SmtpTransportConfig {
+  provider: MailProvider;
+  enabled: boolean;
+  configured: boolean;
+  from: string;
+  adminEmail: string;
+  testRecipient: string;
+}
+
+const PROVIDER_PRESETS: Record<
+  MailProvider,
+  { host: string; port: number; label: string }
+> = {
+  brevo: {
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    label: 'Brevo (gratuit, dev + prod, 300 emails/jour)',
+  },
+  mailtrap: {
+    host: 'sandbox.smtp.mailtrap.io',
+    port: 2525,
+    label: 'Mailtrap (sandbox, emails fictifs)',
+  },
+  gmail: {
+    host: 'smtp.gmail.com',
+    port: 587,
+    label: 'Gmail (mot de passe application)',
+  },
+  smtp: {
+    host: '',
+    port: 587,
+    label: 'SMTP personnalisé (MAIL_HOST requis)',
+  },
+};
+
 function resolveMailUser(): string {
-  return (process.env.MAIL_USER || '').trim();
+  return (
+    process.env.MAIL_SMTP_LOGIN ||
+    process.env.MAIL_USER ||
+    ''
+  ).trim();
 }
 
 function resolveMailPass(): string {
   return (process.env.MAIL_PASS || '').trim();
+}
+
+export function resolveMailProvider(): MailProvider {
+  const raw = (process.env.MAIL_PROVIDER || '').toLowerCase();
+
+  if (
+    raw === 'brevo' ||
+    raw === 'mailtrap' ||
+    raw === 'gmail' ||
+    raw === 'smtp'
+  ) {
+    return raw;
+  }
+
+  // Rétrocompat .env sans MAIL_PROVIDER
+  const legacyHost = (process.env.MAIL_HOST || '').toLowerCase();
+  if (legacyHost.includes('mailtrap')) {
+    return 'mailtrap';
+  }
+  if (legacyHost.includes('gmail')) {
+    return 'gmail';
+  }
+
+  return 'brevo';
+}
+
+export function getMailProviderLabel(provider: MailProvider): string {
+  return PROVIDER_PRESETS[provider].label;
+}
+
+export function parseMailAddress(value: string): string {
+  const trimmed = value.trim();
+  const match = trimmed.match(/<([^>]+)>/);
+  return (match?.[1] ?? trimmed).trim();
+}
+
+export function resolveAdminRecipient(
+  adminEmail?: string,
+  fromAddress?: string,
+  fallback = 'contact@tunrent.tn',
+): string {
+  if (adminEmail?.trim()) {
+    return parseMailAddress(adminEmail);
+  }
+
+  if (fromAddress?.trim()) {
+    return parseMailAddress(fromAddress);
+  }
+
+  return fallback;
 }
 
 export function isMailConfigured(user?: string, pass?: string): boolean {
@@ -33,6 +124,65 @@ export function isMailConfigured(user?: string, pass?: string): boolean {
   );
 }
 
+function resolveFromAddress(user: string): string {
+  const explicit = (process.env.MAIL_FROM || '').trim();
+  if (explicit) {
+    return explicit;
+  }
+
+  const senderEmail = (process.env.MAIL_USER || '').trim();
+  if (senderEmail.includes('@') && !senderEmail.includes('@smtp-brevo.com')) {
+    return `TunRent <${senderEmail}>`;
+  }
+
+  if (user.includes('@') && !user.includes('@smtp-brevo.com')) {
+    return `TunRent <${user}>`;
+  }
+
+  return 'TunRent <noreply@tunrent.tn>';
+}
+
+/** Single source of truth for SMTP settings (dev + prod). */
+export function resolveMailConfig(): ResolvedMailConfig {
+  const provider = resolveMailProvider();
+  const preset = PROVIDER_PRESETS[provider];
+  const user = resolveMailUser();
+  const pass = resolveMailPass();
+
+  const explicitHost = (process.env.MAIL_HOST || '').trim();
+  const explicitPort = process.env.MAIL_PORT
+    ? parseInt(process.env.MAIL_PORT, 10)
+    : undefined;
+
+  const host = provider === 'smtp' ? explicitHost : preset.host;
+  const port =
+    provider === 'smtp' ? (explicitPort ?? preset.port) : preset.port;
+
+  const from = resolveFromAddress(user);
+  const adminEmail = (process.env.MAIL_ADMIN_EMAIL || '').trim();
+  const testRecipient = (
+    process.env.MAIL_TEST_TO ||
+    process.env.MAIL_ADMIN_EMAIL ||
+    user ||
+    ''
+  ).trim();
+
+  const hostOk = provider !== 'smtp' || Boolean((process.env.MAIL_HOST || '').trim());
+
+  return {
+    provider,
+    enabled: process.env.MAIL_ENABLED !== 'false',
+    configured: isMailConfigured(user, pass) && hostOk,
+    host,
+    port,
+    user,
+    pass,
+    from,
+    adminEmail,
+    testRecipient,
+  };
+}
+
 /** Shared SMTP options for Nest MailerModule and standalone scripts. */
 export function buildSmtpTransportOptions(config: SmtpTransportConfig) {
   const { host, port, user, pass } = config;
@@ -40,32 +190,13 @@ export function buildSmtpTransportOptions(config: SmtpTransportConfig) {
   return {
     host,
     port,
-    // Brevo : 587/2525 = STARTTLS (secure false), 465 = SSL
+    // 587/2525 = STARTTLS, 465 = SSL
     secure: port === 465,
     auth: user && pass ? { user, pass } : undefined,
+    tls: {
+      minVersion: 'TLSv1.2' as const,
+    },
   };
 }
 
-export default registerAs('mail', () => {
-  const host = process.env.MAIL_HOST || 'sandbox.smtp.mailtrap.io';
-  const port = parseInt(process.env.MAIL_PORT || '2525', 10);
-  const user = resolveMailUser();
-  const pass = resolveMailPass();
-
-  return {
-    enabled: process.env.MAIL_ENABLED !== 'false',
-    configured: isMailConfigured(user, pass),
-    host,
-    port,
-    user,
-    pass,
-    from:
-      process.env.MAIL_FROM || 'TunRent <noreply@tunrent.tn>',
-    adminEmail: (process.env.MAIL_ADMIN_EMAIL || '').trim(),
-    testRecipient: (
-      process.env.MAIL_TEST_TO ||
-      process.env.MAIL_ADMIN_EMAIL ||
-      ''
-    ).trim(),
-  };
-});
+export default registerAs('mail', () => resolveMailConfig());

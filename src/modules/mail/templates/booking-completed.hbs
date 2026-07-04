@@ -1,10 +1,27 @@
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Location terminée</title></head>
-<body>
-  <h1>Location terminée</h1>
-  <p>Bonjour {{clientName}},</p>
-  <p>Votre location {{bookingReference}} chez {{agencyName}} ({{carName}}) est terminée.</p>
-  <p>Partagez votre expérience : <a href="{{reviewUrl}}">Laisser un avis</a></p>
-</body>
-</html>
+{{#> layout
+  title="Location terminée"
+  preheader="Merci pour votre confiance — partagez votre avis"
+  badge="Terminée"
+  badgeBg="#eff6ff"
+  badgeColor="#1e3a5f"
+  heading="Merci pour votre location"
+  subheading=(concat "Bonjour " clientName ", votre location chez " agencyName " est terminée. Nous espérons que tout s'est bien passé !")
+}}
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:8px 0 24px;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+    {{> detail-row label="Référence" value=bookingReference}}
+    {{> detail-row label="Véhicule" value=carName}}
+    {{> detail-row label="Agence" value=agencyName}}
+  </table>
+
+  <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#475569;">
+    Votre avis aide les autres voyageurs et récompense les agences de qualité.
+  </p>
+
+  {{> button href=reviewUrl label="Laisser un avis"}}
+
+  {{> note
+    bg="#ecfdf5"
+    border="#047857"
+    text="Merci d'avoir choisi TunRent pour votre mobilité en Tunisie."
+  }}
+{{/layout}}

@@ -1,15 +1,24 @@
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Réservation confirmée</title></head>
-<body>
-  <h1>Réservation confirmée</h1>
-  <p>Bonjour {{clientName}},</p>
-  <p>Votre réservation {{bookingReference}} chez {{agencyName}} est confirmée.</p>
-  <ul>
-    <li>Véhicule : {{carName}}</li>
-    <li>Dates : {{startDate}} → {{endDate}}</li>
-    <li>Prise en charge : {{pickupLocation}}</li>
-    <li>Total : {{totalPrice}} TND</li>
-  </ul>
-</body>
-</html>
+{{#> layout
+  title="Réservation confirmée"
+  preheader=(concat "Réservation " bookingReference " confirmée")
+  badge="Confirmée"
+  badgeBg="#ecfdf5"
+  badgeColor="#047857"
+  heading="Votre réservation est confirmée"
+  subheading=(concat "Bonjour " clientName ", bonne nouvelle ! " agencyName " a validé votre demande.")
+}}
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:8px 0 24px;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+    {{> detail-row label="Référence" value=bookingReference}}
+    {{> detail-row label="Agence" value=agencyName}}
+    {{> detail-row label="Véhicule" value=carName}}
+    {{> detail-row label="Dates" value=(concat startDate " → " endDate)}}
+    {{> detail-row label="Prise en charge" value=pickupLocation}}
+    {{> detail-row label="Total" value=(concat totalPrice " TND")}}
+  </table>
+
+  {{> note
+    bg="#f0f9ff"
+    border="#1e3a5f"
+    text="Présentez-vous au lieu convenu avec votre pièce d'identité et votre permis de conduire. L'agence pourra vous contacter pour finaliser les détails."
+  }}
+{{/layout}}

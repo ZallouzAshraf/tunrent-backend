@@ -1,12 +1,26 @@
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Réservation annulée</title></head>
-<body>
-  <h1>Réservation annulée</h1>
-  <p>Bonjour {{recipientName}},</p>
-  <p>La réservation {{bookingReference}} ({{carName}} — {{agencyName}}) a été annulée par {{cancelledBy}}.</p>
+{{#> layout
+  title="Réservation annulée"
+  preheader=(concat "Réservation " bookingReference " annulée")
+  badge="Annulée"
+  badgeBg="#f1f5f9"
+  badgeColor="#475569"
+  heading="Réservation annulée"
+  subheading=(concat "Bonjour " recipientName ", la réservation suivante a été annulée.")
+}}
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:8px 0 24px;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+    {{> detail-row label="Référence" value=bookingReference}}
+    {{> detail-row label="Véhicule" value=carName}}
+    {{> detail-row label="Agence" value=agencyName}}
+    {{> detail-row label="Annulée par" value=cancelledBy}}
+  </table>
+
   {{#if cancellationReason}}
-  <p>Raison : {{cancellationReason}}</p>
+  {{> note
+    bg="#f8fafc"
+    border="#64748b"
+    text=(concat "<strong>Raison :</strong> " cancellationReason)
+  }}
   {{/if}}
-</body>
-</html>
+
+  {{> button href=frontendUrl label="Voir les voitures disponibles"}}
+{{/layout}}

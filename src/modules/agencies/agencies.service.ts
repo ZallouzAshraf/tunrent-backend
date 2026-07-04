@@ -23,6 +23,7 @@ import {
 } from '../../common/utils/pagination.util';
 import { generateSlug, generateUniqueSlug } from '../../common/utils/slug.util';
 import { AgencyUser } from '../agency-users/entities/agency-user.entity';
+import { resolveAdminRecipient } from '../../config/mail.config';
 import { MailService } from '../mail/mail.service';
 import { User } from '../users/entities/user.entity';
 import { CreateAgencyDto } from './dto/create-agency.dto';
@@ -265,10 +266,11 @@ export class AgenciesService {
 
   private async notifyAgencyPending(agency: Agency, owner: User): Promise<void> {
     const frontendUrl = this.configService.get<string>('app.frontendUrl')!;
-    const adminEmail =
-      this.configService.get<string>('mail.adminEmail') ||
-      this.configService.get<string>('mail.from') ||
-      agency.email;
+    const adminEmail = resolveAdminRecipient(
+      this.configService.get<string>('mail.adminEmail'),
+      this.configService.get<string>('mail.from'),
+      agency.email,
+    );
 
     try {
       await this.mailService.sendAgencyPending(adminEmail, {
