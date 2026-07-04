@@ -42,7 +42,8 @@ Thumbs.db
 # runtime / temp
 .temp/
 .tmp/
-uploads/
+# runtime user uploads (root folder only — not src/modules/uploads)
+/uploads/
 
 # docker local overrides
 docker-compose.override.yml
