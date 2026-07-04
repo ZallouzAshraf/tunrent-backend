@@ -111,6 +111,42 @@ export class ReviewsService {
     }));
   }
 
+  async findPublic(
+    filters: {
+      carId?: string;
+      agencyId?: string;
+      page?: number;
+      limit?: number;
+    },
+  ): Promise<PaginatedResult<Review>> {
+    if (!filters.carId && !filters.agencyId) {
+      throw new BadRequestException('carId or agencyId is required');
+    }
+
+    const { page, limit, skip } = normalizePagination(filters);
+
+    const qb = this.reviewRepo
+      .createQueryBuilder('review')
+      .leftJoinAndSelect('review.car', 'car')
+      .leftJoinAndSelect('review.agency', 'agency')
+      .where('review.isVisible = true');
+
+    if (filters.carId) {
+      qb.andWhere('review.carId = :carId', { carId: filters.carId });
+    }
+
+    if (filters.agencyId) {
+      qb.andWhere('review.agencyId = :agencyId', {
+        agencyId: filters.agencyId,
+      });
+    }
+
+    qb.orderBy('review.createdAt', 'DESC').skip(skip).take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
+    return buildPaginatedResult(data, total, page, limit);
+  }
+
   async findByClient(userId: string): Promise<Review[]> {
     return this.reviewRepo.find({
       where: { clientUserId: userId },

@@ -13,6 +13,7 @@ import {
   PaginatedResult,
 } from '../../common/utils/pagination.util';
 import { Agency } from '../agencies/entities/agency.entity';
+import { AvailabilityService } from '../availability/availability.service';
 import { Car } from '../cars/entities/car.entity';
 import { ReviewsService } from '../reviews/reviews.service';
 import {
@@ -51,10 +52,24 @@ export class MarketplaceService {
     @InjectRepository(Agency)
     private readonly agencyRepo: Repository<Agency>,
     private readonly reviewsService: ReviewsService,
+    private readonly availabilityService: AvailabilityService,
   ) {}
 
   getFeaturedReviews(limit = 8) {
     return this.reviewsService.findFeaturedPublic(limit);
+  }
+
+  getPublicReviews(query: {
+    carId?: string;
+    agencyId?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    return this.reviewsService.findPublic(query);
+  }
+
+  getCarAvailability(carId: string, from?: string, to?: string) {
+    return this.availabilityService.getPublicCarAvailability(carId, from, to);
   }
 
   async searchCars(

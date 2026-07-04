@@ -17,6 +17,7 @@ import { PaymentsService } from '../../payments/payments.service';
 import { BookingsService } from '../bookings.service';
 import { BookingQueryDto } from '../dto/booking-query.dto';
 import { CancelBookingDto } from '../dto/cancel-booking.dto';
+import { CreateDashboardBookingDto } from '../dto/create-dashboard-booking.dto';
 import { RejectBookingDto } from '../dto/reject-booking.dto';
 
 @Controller('dashboard/bookings')
@@ -38,6 +39,19 @@ export class DashboardBookingsController {
   @Get('calendar')
   getCalendar(@CurrentAgency() agencyId: string) {
     return this.bookingsService.getCalendar(agencyId);
+  }
+
+  @Post()
+  create(
+    @CurrentAgency() agencyId: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreateDashboardBookingDto,
+  ) {
+    return this.bookingsService.createDashboardBooking(
+      dto,
+      agencyId,
+      user.sub,
+    );
   }
 
   @Get(':id')

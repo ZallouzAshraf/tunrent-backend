@@ -29,6 +29,7 @@ import { User } from '../users/entities/user.entity';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { BookingQueryDto } from './dto/booking-query.dto';
 import { CreateMarketplaceBookingDto } from './dto/create-marketplace-booking.dto';
+import { CreateDashboardBookingDto } from './dto/create-dashboard-booking.dto';
 import { RejectBookingDto } from './dto/reject-booking.dto';
 import { Booking } from './entities/booking.entity';
 
@@ -159,6 +160,100 @@ export class BookingsService {
       message: `${clientName} a demandé la location de ${carName} (${bookingReference}).`,
       data: { bookingId: saved.id, carId: car.id },
     });
+
+    return saved;
+  }
+
+  async createDashboardBooking(
+    dto: CreateDashboardBookingDto,
+    agencyId: string,
+    userId: string,
+  ): Promise<Booking> {
+    const car = await this.carRepo.findOne({
+      where: { id: dto.carId, agencyId },
+      relations: { agency: true },
+    });
+
+    if (!car) {
+      throw new NotFoundException('Car not found');
+    }
+
+    if (car.status !== CarStatus.AVAILABLE) {
+      throw new BadRequestException('Car is not available for booking');
+    }
+
+    const source = dto.source ?? BookingSource.DIRECT;
+    if (
+      source !== BookingSource.DIRECT &&
+      source !== BookingSource.PHONE
+    ) {
+      throw new BadRequestException('Invalid booking source for dashboard');
+    }
+
+    const startDate = this.parseDate(dto.startDate);
+    const endDate = this.parseDate(dto.endDate);
+
+    const available = await this.availabilityService.isCarAvailable(
+      car.id,
+      startDate,
+      endDate,
+    );
+
+    if (!available) {
+      throw new BadRequestException(
+        'Car is not available for the selected dates',
+      );
+    }
+
+    const totalDays = this.calculateTotalDays(startDate, endDate);
+    const pricePerDay = Number(car.pricePerDay);
+    const totalPrice = pricePerDay * totalDays;
+    const bookingReference = await this.nextBookingReference();
+    const autoConfirm = dto.autoConfirm === true;
+
+    const booking = this.bookingRepo.create({
+      bookingReference,
+      agencyId: car.agencyId,
+      carId: car.id,
+      clientUserId: null,
+      clientFirstName: dto.clientFirstName,
+      clientLastName: dto.clientLastName,
+      clientEmail: dto.clientEmail.toLowerCase(),
+      clientPhone: dto.clientPhone,
+      clientCin: dto.clientCin ?? null,
+      clientDrivingLicense: dto.clientDrivingLicense ?? null,
+      startDate,
+      endDate,
+      totalDays,
+      pickupLocation: dto.pickupLocation,
+      dropoffLocation: dto.dropoffLocation,
+      pricePerDay,
+      totalPrice,
+      depositAmount: car.depositAmount ? Number(car.depositAmount) : null,
+      status: autoConfirm ? BookingStatus.CONFIRMED : BookingStatus.PENDING,
+      source,
+      clientNotes: dto.clientNotes ?? null,
+      confirmedBy: autoConfirm ? userId : null,
+      confirmedAt: autoConfirm ? new Date() : null,
+    });
+
+    const saved = await this.bookingRepo.save(booking);
+
+    if (autoConfirm) {
+      await this.sendBookingConfirmedEmail(saved);
+      await this.notifyClient(saved, {
+        type: NotificationType.BOOKING_CONFIRMED,
+        title: 'Réservation confirmée',
+        message: `Votre réservation ${saved.bookingReference} a été confirmée.`,
+      });
+    } else {
+      await this.notificationsService.notifyAgencyMembers(car.agencyId, {
+        type: NotificationType.BOOKING_NEW,
+        title: 'Nouvelle réservation',
+        message: `Réservation ${saved.bookingReference} créée depuis le dashboard.`,
+        data: { bookingId: saved.id, carId: car.id },
+      });
+    }
 
     return saved;
   }

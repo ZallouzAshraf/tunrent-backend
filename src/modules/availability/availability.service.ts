@@ -5,11 +5,23 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { BookingStatus } from '../../common/enums';
+import { BookingStatus, CarStatus, AgencyStatus } from '../../common/enums';
 import { Booking } from '../bookings/entities/booking.entity';
 import { Car } from '../cars/entities/car.entity';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { CarAvailabilityBlock } from './entities/car-availability-block.entity';
+
+export interface PublicUnavailableRange {
+  start: string;
+  end: string;
+  type: 'booking' | 'block';
+}
+
+export interface PublicCarAvailabilityResult {
+  carId: string;
+  minRentalDays: number;
+  unavailableRanges: PublicUnavailableRange[];
+}
 
 export interface CarAvailabilityResult {
   carId: string;
@@ -50,6 +62,73 @@ export class AvailabilityService {
     ]);
 
     return { carId, blocks, bookings };
+  }
+
+  async getPublicCarAvailability(
+    carId: string,
+    from?: string,
+    to?: string,
+  ): Promise<PublicCarAvailabilityResult> {
+    const car = await this.carRepo.findOne({
+      where: { id: carId, status: CarStatus.AVAILABLE },
+      relations: { agency: true },
+    });
+
+    if (!car || car.agency.status !== AgencyStatus.ACTIVE) {
+      throw new NotFoundException('Car not found');
+    }
+
+    const rangeStart = from
+      ? this.parseDateOnly(from)
+      : this.parseDateOnly(new Date().toISOString().slice(0, 10));
+    const rangeEnd = to
+      ? this.parseDateOnly(to)
+      : this.addMonths(rangeStart, 3);
+
+    const bookingStatuses = [
+      BookingStatus.PENDING,
+      BookingStatus.CONFIRMED,
+      BookingStatus.IN_PROGRESS,
+    ];
+
+    const [blocks, bookings] = await Promise.all([
+      this.blockRepo
+        .createQueryBuilder('block')
+        .where('block.carId = :carId', { carId })
+        .andWhere('block.endDate >= :rangeStart', { rangeStart })
+        .andWhere('block.startDate <= :rangeEnd', { rangeEnd })
+        .orderBy('block.startDate', 'ASC')
+        .getMany(),
+      this.bookingRepo
+        .createQueryBuilder('booking')
+        .where('booking.carId = :carId', { carId })
+        .andWhere('booking.status IN (:...statuses)', {
+          statuses: bookingStatuses,
+        })
+        .andWhere('booking.endDate >= :rangeStart', { rangeStart })
+        .andWhere('booking.startDate <= :rangeEnd', { rangeEnd })
+        .orderBy('booking.startDate', 'ASC')
+        .getMany(),
+    ]);
+
+    const unavailableRanges: PublicUnavailableRange[] = [
+      ...bookings.map((b) => ({
+        start: this.formatDateOnly(b.startDate),
+        end: this.formatDateOnly(b.endDate),
+        type: 'booking' as const,
+      })),
+      ...blocks.map((b) => ({
+        start: this.formatDateOnly(b.startDate),
+        end: this.formatDateOnly(b.endDate),
+        type: 'block' as const,
+      })),
+    ].sort((a, b) => a.start.localeCompare(b.start));
+
+    return {
+      carId,
+      minRentalDays: car.minRentalDays ?? 1,
+      unavailableRanges,
+    };
   }
 
   async createBlock(
@@ -117,7 +196,11 @@ export class AvailabilityService {
         .createQueryBuilder('booking')
         .where('booking.carId = :carId', { carId })
         .andWhere('booking.status IN (:...statuses)', {
-          statuses: [BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS],
+          statuses: [
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED,
+            BookingStatus.IN_PROGRESS,
+          ],
         })
         .andWhere('booking.startDate <= :endDate', { endDate })
         .andWhere('booking.endDate >= :startDate', { startDate })
@@ -146,5 +229,21 @@ export class AvailabilityService {
     }
 
     return car;
+  }
+
+  private parseDateOnly(value: string): Date {
+    const date = new Date(value);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  private formatDateOnly(value: Date): string {
+    return value.toISOString().slice(0, 10);
+  }
+
+  private addMonths(date: Date, months: number): Date {
+    const result = new Date(date);
+    result.setMonth(result.getMonth() + months);
+    return result;
   }
 }
