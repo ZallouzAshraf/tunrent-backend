@@ -34,6 +34,10 @@ export function validateEnvironment(): void {
     errors.push('FRONTEND_URL is required in production');
   }
 
+  if (isProd && !process.env.DB_HOST?.trim()) {
+    errors.push('DB_HOST is required in production');
+  }
+
   if (errors.length > 0) {
     const message = `Environment validation failed:\n- ${errors.join('\n- ')}`;
     if (isProd) {

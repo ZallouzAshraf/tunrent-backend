@@ -46,7 +46,7 @@ const entities = [
           'database.ssl',
         ),
         migrations: ['dist/database/migrations/*.js'],
-        migrationsRun: configService.get<boolean>('database.migrationsRun'),
+        migrationsRun: false,
         extra: {
           connectionTimeoutMillis: 15_000,
         },

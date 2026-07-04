@@ -1,5 +1,9 @@
 import { registerAs } from '@nestjs/config';
 
+export function isSupabaseHost(host: string): boolean {
+  return host.includes('supabase.co');
+}
+
 export function resolveDatabaseSsl(
   host: string,
 ): boolean | { rejectUnauthorized: false } {
@@ -7,7 +11,7 @@ export function resolveDatabaseSsl(
     return false;
   }
 
-  if (process.env.DB_SSL === 'true') {
+  if (process.env.DB_SSL === 'true' || isSupabaseHost(host)) {
     return { rejectUnauthorized: false };
   }
 
@@ -45,6 +49,5 @@ export default registerAs('database', () => {
     password: process.env.DB_PASSWORD || 'secret',
     name: process.env.DB_NAME || 'car_rental_tn',
     ssl: resolveDatabaseSsl(host),
-    migrationsRun: process.env.MIGRATIONS_RUN === 'true',
   };
 });

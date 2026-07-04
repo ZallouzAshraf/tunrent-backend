@@ -4,7 +4,7 @@ export class InitialSchema1730000000000 implements MigrationInterface {
   name = 'InitialSchema1730000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public`);
+    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA public`);
     await queryRunner.query(`CREATE TYPE public.agencies_governorate_enum AS ENUM (
     'tunis',
     'ariana',
@@ -151,7 +151,7 @@ export class InitialSchema1730000000000 implements MigrationInterface {
     'client'
 )`);
     await queryRunner.query(`CREATE TABLE public.agencies (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     name character varying(255) NOT NULL,
     slug character varying(100) NOT NULL,
     description text,
@@ -184,7 +184,7 @@ export class InitialSchema1730000000000 implements MigrationInterface {
     deleted_at timestamp without time zone
 )`);
     await queryRunner.query(`CREATE TABLE public.agency_users (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     agency_id uuid NOT NULL,
     user_id uuid NOT NULL,
     role public.agency_users_role_enum NOT NULL,
@@ -196,7 +196,7 @@ export class InitialSchema1730000000000 implements MigrationInterface {
     updated_at timestamp without time zone DEFAULT now() NOT NULL
 )`);
     await queryRunner.query(`CREATE TABLE public.audit_logs (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     agency_id uuid,
     user_id uuid,
     action character varying(100) NOT NULL,
@@ -209,7 +209,7 @@ export class InitialSchema1730000000000 implements MigrationInterface {
     created_at timestamp without time zone DEFAULT now() NOT NULL
 )`);
     await queryRunner.query(`CREATE TABLE public.bookings (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     booking_reference character varying(20) NOT NULL,
     agency_id uuid NOT NULL,
     car_id uuid NOT NULL,
@@ -244,7 +244,7 @@ export class InitialSchema1730000000000 implements MigrationInterface {
     CONSTRAINT "CHK_fc9da30d1b68710d67a7d23654" CHECK ((end_date > start_date))
 )`);
     await queryRunner.query(`CREATE TABLE public.car_availability_blocks (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     agency_id uuid NOT NULL,
     car_id uuid NOT NULL,
     start_date date NOT NULL,
@@ -255,7 +255,7 @@ export class InitialSchema1730000000000 implements MigrationInterface {
     created_at timestamp without time zone DEFAULT now() NOT NULL
 )`);
     await queryRunner.query(`CREATE TABLE public.cars (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     agency_id uuid NOT NULL,
     brand character varying(100) NOT NULL,
     model character varying(100) NOT NULL,
@@ -291,7 +291,7 @@ export class InitialSchema1730000000000 implements MigrationInterface {
     deleted_at timestamp without time zone
 )`);
     await queryRunner.query(`CREATE TABLE public.notifications (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     agency_id uuid,
     user_id uuid NOT NULL,
     type public.notifications_type_enum NOT NULL,
@@ -303,7 +303,7 @@ export class InitialSchema1730000000000 implements MigrationInterface {
     created_at timestamp without time zone DEFAULT now() NOT NULL
 )`);
     await queryRunner.query(`CREATE TABLE public.payments (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     agency_id uuid NOT NULL,
     booking_id uuid NOT NULL,
     amount numeric(10,2) NOT NULL,
@@ -319,7 +319,7 @@ export class InitialSchema1730000000000 implements MigrationInterface {
     created_at timestamp without time zone DEFAULT now() NOT NULL
 )`);
     await queryRunner.query(`CREATE TABLE public.plan_change_requests (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     agency_id uuid NOT NULL,
     requested_by uuid NOT NULL,
     current_plan public.plan_change_requests_current_plan_enum NOT NULL,
@@ -334,7 +334,7 @@ export class InitialSchema1730000000000 implements MigrationInterface {
     updated_at timestamp without time zone DEFAULT now() NOT NULL
 )`);
     await queryRunner.query(`CREATE TABLE public.refresh_tokens (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid NOT NULL,
     token_hash text NOT NULL,
     agency_id uuid,
@@ -345,7 +345,7 @@ export class InitialSchema1730000000000 implements MigrationInterface {
     created_at timestamp without time zone DEFAULT now() NOT NULL
 )`);
     await queryRunner.query(`CREATE TABLE public.reviews (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     agency_id uuid NOT NULL,
     car_id uuid,
     booking_id uuid NOT NULL,
@@ -363,7 +363,7 @@ export class InitialSchema1730000000000 implements MigrationInterface {
     CONSTRAINT "CHK_3ade80d7a36ce0f8cc83521ee1" CHECK (((rating_overall >= 1) AND (rating_overall <= 5)))
 )`);
     await queryRunner.query(`CREATE TABLE public.users (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     first_name character varying(100) NOT NULL,
     last_name character varying(100) NOT NULL,
     email character varying(255) NOT NULL,

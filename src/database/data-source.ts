@@ -14,7 +14,7 @@ export default new DataSource({
   port: resolveDatabasePort(host),
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'secret',
-  database: process.env.DB_NAME || 'postgres',
+  database: process.env.DB_NAME || 'car_rental_tn',
   ssl: resolveDatabaseSsl(host),
   entities,
   migrations: ['dist/database/migrations/*.js'],
