@@ -7,9 +7,7 @@ import {
 } from 'class-validator';
 
 @ValidatorConstraint({ name: 'IsValidBookingDateRange', async: false })
-export class IsValidBookingDateRangeConstraint
-  implements ValidatorConstraintInterface
-{
+export class IsValidBookingDateRangeConstraint implements ValidatorConstraintInterface {
   validate(_value: unknown, args: ValidationArguments): boolean {
     const obj = args.object as { startDate?: string; endDate?: string };
 

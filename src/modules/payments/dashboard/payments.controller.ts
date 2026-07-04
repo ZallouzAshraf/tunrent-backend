@@ -22,10 +22,7 @@ export class DashboardPaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Get()
-  findAll(
-    @CurrentAgency() agencyId: string,
-    @Query() query: PaymentQueryDto,
-  ) {
+  findAll(@CurrentAgency() agencyId: string, @Query() query: PaymentQueryDto) {
     return this.paymentsService.findAll(agencyId, query);
   }
 

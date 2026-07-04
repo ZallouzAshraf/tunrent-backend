@@ -16,7 +16,7 @@ export function getEffectiveAgencyPlan(agency: Agency): AgencyPlan {
     return AgencyPlan.FREE;
   }
 
-  return agency.plan as AgencyPlan;
+  return agency.plan;
 }
 
 export function getEffectivePlanLimits(agency: Agency): {

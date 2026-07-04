@@ -111,14 +111,12 @@ export class ReviewsService {
     }));
   }
 
-  async findPublic(
-    filters: {
-      carId?: string;
-      agencyId?: string;
-      page?: number;
-      limit?: number;
-    },
-  ): Promise<PaginatedResult<Review>> {
+  async findPublic(filters: {
+    carId?: string;
+    agencyId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedResult<Review>> {
     if (!filters.carId && !filters.agencyId) {
       throw new BadRequestException('carId or agencyId is required');
     }

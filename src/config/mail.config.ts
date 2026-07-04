@@ -47,11 +47,7 @@ const PROVIDER_PRESETS: Record<
 };
 
 function resolveMailUser(): string {
-  return (
-    process.env.MAIL_SMTP_LOGIN ||
-    process.env.MAIL_USER ||
-    ''
-  ).trim();
+  return (process.env.MAIL_SMTP_LOGIN || process.env.MAIL_USER || '').trim();
 }
 
 function resolveMailPass(): string {
@@ -167,7 +163,8 @@ export function resolveMailConfig(): ResolvedMailConfig {
     ''
   ).trim();
 
-  const hostOk = provider !== 'smtp' || Boolean((process.env.MAIL_HOST || '').trim());
+  const hostOk =
+    provider !== 'smtp' || Boolean((process.env.MAIL_HOST || '').trim());
 
   return {
     provider,

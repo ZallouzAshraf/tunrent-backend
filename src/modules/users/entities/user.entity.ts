@@ -40,7 +40,12 @@ export class User {
   @Column({ type: 'varchar', length: 8, nullable: true, unique: true })
   cin: string | null;
 
-  @Column({ name: 'driving_license_number', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'driving_license_number',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   drivingLicenseNumber: string | null;
 
   @Column({ name: 'driving_license_expiry', type: 'date', nullable: true })
@@ -66,16 +71,34 @@ export class User {
   @Column({ name: 'is_email_verified', type: 'boolean', default: false })
   isEmailVerified: boolean;
 
-  @Column({ name: 'email_verification_token', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'email_verification_token',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   emailVerificationToken: string | null;
 
-  @Column({ name: 'email_verification_expires_at', type: 'timestamp', nullable: true })
+  @Column({
+    name: 'email_verification_expires_at',
+    type: 'timestamp',
+    nullable: true,
+  })
   emailVerificationExpiresAt: Date | null;
 
-  @Column({ name: 'password_reset_token', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'password_reset_token',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   passwordResetToken: string | null;
 
-  @Column({ name: 'password_reset_expires_at', type: 'timestamp', nullable: true })
+  @Column({
+    name: 'password_reset_expires_at',
+    type: 'timestamp',
+    nullable: true,
+  })
   passwordResetExpiresAt: Date | null;
 
   @Column({ name: 'is_active', type: 'boolean', default: true })

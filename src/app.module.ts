@@ -33,14 +33,22 @@ import { DatabaseModule } from './database/database.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, jwtConfig, mailConfig, cloudinaryConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        jwtConfig,
+        mailConfig,
+        cloudinaryConfig,
+      ],
     }),
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ([{
-        ttl: (configService.get<number>('app.throttleTtl') || 60) * 1000,
-        limit: configService.get<number>('app.throttleLimit') || 100,
-      }]),
+      useFactory: (configService: ConfigService) => [
+        {
+          ttl: (configService.get<number>('app.throttleTtl') || 60) * 1000,
+          limit: configService.get<number>('app.throttleLimit') || 100,
+        },
+      ],
     }),
     DatabaseModule,
     CommonModule,

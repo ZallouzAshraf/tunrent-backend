@@ -7,9 +7,7 @@ import {
 } from 'class-validator';
 
 @ValidatorConstraint({ name: 'IsValidMarketplaceDateRange', async: false })
-export class IsValidMarketplaceDateRangeConstraint
-  implements ValidatorConstraintInterface
-{
+export class IsValidMarketplaceDateRangeConstraint implements ValidatorConstraintInterface {
   validate(_value: unknown, args: ValidationArguments): boolean {
     const obj = args.object as { start_date?: string; end_date?: string };
     const hasStart = !!obj.start_date;

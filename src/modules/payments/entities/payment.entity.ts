@@ -7,7 +7,11 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { PaymentMethod, PaymentType, PaymentStatus } from '../../../common/enums';
+import {
+  PaymentMethod,
+  PaymentType,
+  PaymentStatus,
+} from '../../../common/enums';
 import { Agency } from '../../agencies/entities/agency.entity';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { User } from '../../users/entities/user.entity';
@@ -42,7 +46,12 @@ export class Payment {
   @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
   status: PaymentStatus;
 
-  @Column({ name: 'transaction_id', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'transaction_id',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   transactionId: string | null;
 
   @Column({ name: 'gateway_response', type: 'jsonb', nullable: true })
@@ -64,7 +73,9 @@ export class Payment {
   @JoinColumn({ name: 'agency_id' })
   agency: Agency;
 
-  @ManyToOne(() => Booking, (booking) => booking.payments, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Booking, (booking) => booking.payments, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'booking_id' })
   booking: Booking;
 

@@ -1,11 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
-import {
-  AgencyStatus,
-  BookingStatus,
-  CarStatus,
-} from '../../common/enums';
+import { AgencyStatus, BookingStatus, CarStatus } from '../../common/enums';
 import { escapeIlike } from '../../common/utils/escape-ilike.util';
 import {
   buildPaginatedResult,
@@ -150,19 +146,21 @@ export class MarketplaceService {
     }
 
     if (filters.start_date && filters.end_date) {
-      this.applyAvailabilityFilter(
-        qb,
-        filters.start_date,
-        filters.end_date,
-      );
+      this.applyAvailabilityFilter(qb, filters.start_date, filters.end_date);
     }
 
     switch (filters.sort) {
       case MarketplaceSort.PRICE_ASC:
-        qb.orderBy('car.pricePerDay', 'ASC').addOrderBy('car.createdAt', 'DESC');
+        qb.orderBy('car.pricePerDay', 'ASC').addOrderBy(
+          'car.createdAt',
+          'DESC',
+        );
         break;
       case MarketplaceSort.PRICE_DESC:
-        qb.orderBy('car.pricePerDay', 'DESC').addOrderBy('car.createdAt', 'DESC');
+        qb.orderBy('car.pricePerDay', 'DESC').addOrderBy(
+          'car.createdAt',
+          'DESC',
+        );
         break;
       case MarketplaceSort.RATING_DESC:
         qb.orderBy('agency.avgRating', 'DESC', 'NULLS LAST').addOrderBy(
@@ -198,7 +196,7 @@ export class MarketplaceService {
     return {
       ...car,
       agency: this.toPublicAgency(car.agency),
-    } as MarketplaceCar;
+    };
   }
 
   async searchAgencies(

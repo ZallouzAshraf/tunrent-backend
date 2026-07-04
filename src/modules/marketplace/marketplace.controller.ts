@@ -24,11 +24,7 @@ export class MarketplaceController {
     @Param('id') id: string,
     @Query() query: PublicAvailabilityQueryDto,
   ) {
-    return this.marketplaceService.getCarAvailability(
-      id,
-      query.from,
-      query.to,
-    );
+    return this.marketplaceService.getCarAvailability(id, query.from, query.to);
   }
 
   @Public()

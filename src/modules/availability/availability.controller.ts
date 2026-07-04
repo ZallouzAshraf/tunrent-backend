@@ -37,10 +37,7 @@ export class AvailabilityController {
   @Delete('block/:id')
   @UseGuards(RolesGuard)
   @Roles(AgencyUserRole.OWNER, AgencyUserRole.MANAGER)
-  deleteBlock(
-    @CurrentAgency() agencyId: string,
-    @Param('id') blockId: string,
-  ) {
+  deleteBlock(@CurrentAgency() agencyId: string, @Param('id') blockId: string) {
     return this.availabilityService.deleteBlock(blockId, agencyId);
   }
 

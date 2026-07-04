@@ -202,9 +202,7 @@ export class AdminService {
     };
   }
 
-  private sanitizeUser(
-    user: User,
-  ): Omit<User, 'passwordHash'> {
+  private sanitizeUser(user: User): Omit<User, 'passwordHash'> {
     const { passwordHash: _passwordHash, ...safeUser } = user;
     return safeUser;
   }

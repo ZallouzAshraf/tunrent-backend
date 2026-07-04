@@ -38,7 +38,12 @@ export class AgencyUser {
   })
   status: AgencyUserStatus;
 
-  @Column({ name: 'invitation_token', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'invitation_token',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   invitationToken: string | null;
 
   @Column({ name: 'invitation_expires_at', type: 'timestamp', nullable: true })
@@ -57,7 +62,9 @@ export class AgencyUser {
   @JoinColumn({ name: 'agency_id' })
   agency: Agency;
 
-  @ManyToOne(() => User, (user) => user.agencyMemberships, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.agencyMemberships, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'user_id' })
   user: User;
 

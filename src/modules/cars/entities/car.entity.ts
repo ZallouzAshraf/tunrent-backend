@@ -104,10 +104,22 @@ export class Car {
   @Column({ name: 'price_per_day', type: 'decimal', precision: 10, scale: 2 })
   pricePerDay: number;
 
-  @Column({ name: 'price_per_week', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({
+    name: 'price_per_week',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
   pricePerWeek: number | null;
 
-  @Column({ name: 'deposit_amount', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({
+    name: 'deposit_amount',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
   depositAmount: number | null;
 
   @Column({ name: 'min_rental_days', type: 'smallint', default: 1 })

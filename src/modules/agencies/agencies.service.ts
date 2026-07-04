@@ -166,7 +166,11 @@ export class AgenciesService {
     return agency;
   }
 
-  async update(id: string, dto: UpdateAgencyDto, agencyId?: string): Promise<Agency> {
+  async update(
+    id: string,
+    dto: UpdateAgencyDto,
+    agencyId?: string,
+  ): Promise<Agency> {
     const agency = await this.findById(id, agencyId);
 
     if (dto.name && dto.name !== agency.name) {
@@ -181,7 +185,10 @@ export class AgenciesService {
     return this.agencyRepo.save(agency);
   }
 
-  async softDelete(id: string, agencyId?: string): Promise<{ message: string }> {
+  async softDelete(
+    id: string,
+    agencyId?: string,
+  ): Promise<{ message: string }> {
     const agency = await this.findById(id, agencyId);
     await this.agencyRepo.softRemove(agency);
     return { message: 'Agency deleted successfully' };
@@ -196,7 +203,10 @@ export class AgenciesService {
     return AgencyStatus.PENDING_VALIDATION;
   }
 
-  private async saveAgency(dto: CreateAgencyDto, slug: string): Promise<Agency> {
+  private async saveAgency(
+    dto: CreateAgencyDto,
+    slug: string,
+  ): Promise<Agency> {
     const agency = this.agencyRepo.create({
       name: dto.name.trim(),
       slug,
@@ -264,7 +274,10 @@ export class AgenciesService {
     return count > 0;
   }
 
-  private async notifyAgencyPending(agency: Agency, owner: User): Promise<void> {
+  private async notifyAgencyPending(
+    agency: Agency,
+    owner: User,
+  ): Promise<void> {
     const frontendUrl = this.configService.get<string>('app.frontendUrl')!;
     const adminEmail = resolveAdminRecipient(
       this.configService.get<string>('mail.adminEmail'),

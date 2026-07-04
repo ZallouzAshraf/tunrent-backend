@@ -13,13 +13,7 @@ import { AdminService } from './admin.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      Agency,
-      User,
-      Car,
-      Booking,
-      AgencyUser,
-    ]),
+    TypeOrmModule.forFeature([Agency, User, Car, Booking, AgencyUser]),
     AuthModule,
     MailModule,
     BillingModule,

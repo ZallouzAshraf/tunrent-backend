@@ -5,10 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import {
-  ROLES_KEY,
-  GLOBAL_ROLES_KEY,
-} from '../decorators/roles.decorator';
+import { ROLES_KEY, GLOBAL_ROLES_KEY } from '../decorators/roles.decorator';
 import { AuthenticatedRequest } from '../decorators/current-user.decorator';
 
 @Injectable()

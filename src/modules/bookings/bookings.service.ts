@@ -104,7 +104,9 @@ export class BookingsService {
     );
 
     if (!available) {
-      throw new BadRequestException('Car is not available for the selected dates');
+      throw new BadRequestException(
+        'Car is not available for the selected dates',
+      );
     }
 
     const totalDays = this.calculateTotalDays(startDate, endDate);
@@ -183,10 +185,7 @@ export class BookingsService {
     }
 
     const source = dto.source ?? BookingSource.DIRECT;
-    if (
-      source !== BookingSource.DIRECT &&
-      source !== BookingSource.PHONE
-    ) {
+    if (source !== BookingSource.DIRECT && source !== BookingSource.PHONE) {
       throw new BadRequestException('Invalid booking source for dashboard');
     }
 
@@ -471,7 +470,9 @@ export class BookingsService {
     const booking = await this.findByIdDashboard(id, agencyId);
 
     if (booking.status !== BookingStatus.IN_PROGRESS) {
-      throw new BadRequestException('Only in-progress bookings can be completed');
+      throw new BadRequestException(
+        'Only in-progress bookings can be completed',
+      );
     }
 
     booking.status = BookingStatus.COMPLETED;
@@ -519,9 +520,11 @@ export class BookingsService {
     const booking = await this.findByIdDashboard(id, agencyId);
 
     if (
-      ![BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS].includes(
-        booking.status,
-      )
+      ![
+        BookingStatus.PENDING,
+        BookingStatus.CONFIRMED,
+        BookingStatus.IN_PROGRESS,
+      ].includes(booking.status)
     ) {
       throw new BadRequestException('Booking cannot be cancelled');
     }
@@ -570,10 +573,7 @@ export class BookingsService {
     });
   }
 
-  async findClientBookingById(
-    userId: string,
-    id: string,
-  ): Promise<Booking> {
+  async findClientBookingById(userId: string, id: string): Promise<Booking> {
     await this.findClientBookings(userId);
     const booking = await this.bookingRepo.findOne({
       where: { id, clientUserId: userId },
@@ -651,29 +651,31 @@ export class BookingsService {
         where: { agencyId },
         order: { brand: 'ASC', model: 'ASC' },
       }),
-      this.bookingRepo.find({
-        where: {
-          agencyId,
-          status: BookingStatus.CONFIRMED,
-        },
-        relations: { car: true },
-        order: { startDate: 'ASC' },
-      }).then(async (confirmed) => {
-        const inProgress = await this.bookingRepo.find({
-          where: { agencyId, status: BookingStatus.IN_PROGRESS },
+      this.bookingRepo
+        .find({
+          where: {
+            agencyId,
+            status: BookingStatus.CONFIRMED,
+          },
           relations: { car: true },
           order: { startDate: 'ASC' },
-        });
-        const pending = await this.bookingRepo.find({
-          where: { agencyId, status: BookingStatus.PENDING },
-          relations: { car: true },
-          order: { startDate: 'ASC' },
-        });
-        return [...pending, ...confirmed, ...inProgress].sort(
-          (a, b) =>
-            new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
-        );
-      }),
+        })
+        .then(async (confirmed) => {
+          const inProgress = await this.bookingRepo.find({
+            where: { agencyId, status: BookingStatus.IN_PROGRESS },
+            relations: { car: true },
+            order: { startDate: 'ASC' },
+          });
+          const pending = await this.bookingRepo.find({
+            where: { agencyId, status: BookingStatus.PENDING },
+            relations: { car: true },
+            order: { startDate: 'ASC' },
+          });
+          return [...pending, ...confirmed, ...inProgress].sort(
+            (a, b) =>
+              new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+          );
+        }),
     ]);
 
     return { cars, bookings };

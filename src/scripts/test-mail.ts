@@ -12,7 +12,7 @@ const EMAIL_TYPES = [
   'Bienvenue après vérification',
   'Nouvelle réservation → agence',
   'Réservation confirmée / refusée / annulée',
-  'Location terminée + demande d\'avis',
+  "Location terminée + demande d'avis",
   'Invitation équipe agence',
   'Agence en attente / approuvée',
   'Formulaire contact',
@@ -25,9 +25,13 @@ async function main(): Promise<void> {
   console.log('═══════════════════════════════════════');
   console.log('  TunRent — test email (gratuit)');
   console.log('═══════════════════════════════════════');
-  console.log(`Provider : ${config.provider} — ${getMailProviderLabel(config.provider)}`);
+  console.log(
+    `Provider : ${config.provider} — ${getMailProviderLabel(config.provider)}`,
+  );
   console.log(`Host     : ${config.host}:${config.port}`);
-  console.log(`User     : ${config.user ? `${config.user.slice(0, 4)}…` : '(vide)'}`);
+  console.log(
+    `User     : ${config.user ? `${config.user.slice(0, 4)}…` : '(vide)'}`,
+  );
   console.log(`From     : ${config.from}`);
   console.log(`To       : ${to}`);
   console.log('');
@@ -92,12 +96,12 @@ function printBrevoSetup(): void {
   console.error('   Paramètres → Expéditeurs → Ajouter une adresse email');
   console.error('3. Générez une clé SMTP :');
   console.error('   SMTP & API → Clés SMTP → Générer');
-    console.error('4. Dans tunrent-backend/.env :');
-    console.error('');
-    console.error('   MAIL_PROVIDER=brevo');
-    console.error('   MAIL_SMTP_LOGIN=login-copie-depuis-brevo-smtp');
-    console.error('   MAIL_USER=tunrentcontact@gmail.com');
-    console.error('   MAIL_PASS=xsmtpsib-votre-cle-smtp');
+  console.error('4. Dans tunrent-backend/.env :');
+  console.error('');
+  console.error('   MAIL_PROVIDER=brevo');
+  console.error('   MAIL_SMTP_LOGIN=login-copie-depuis-brevo-smtp');
+  console.error('   MAIL_USER=tunrentcontact@gmail.com');
+  console.error('   MAIL_PASS=xsmtpsib-votre-cle-smtp');
   console.error('   MAIL_ADMIN_EMAIL=votre-email@gmail.com');
   console.error('   MAIL_TEST_TO=votre-email@gmail.com');
   console.error('');
@@ -109,9 +113,13 @@ function printBrevoSetup(): void {
 
 function printBrevoTroubleshooting(): void {
   console.error('Dépannage Brevo :');
-  console.error('• MAIL_SMTP_LOGIN = identifiant SMTP (onglet SMTP, souvent xxx@smtp-brevo.com)');
+  console.error(
+    '• MAIL_SMTP_LOGIN = identifiant SMTP (onglet SMTP, souvent xxx@smtp-brevo.com)',
+  );
   console.error('• MAIL_USER = email expéditeur vérifié (Expéditeurs)');
-  console.error('• MAIL_PASS = clé xsmtpsib-… (onglet Clés SMTP, pas clé API xkeysib)');
+  console.error(
+    '• MAIL_PASS = clé xsmtpsib-… (onglet Clés SMTP, pas clé API xkeysib)',
+  );
   console.error('• Plan gratuit : max 300 emails/jour');
 }
 

@@ -34,10 +34,7 @@ export class CarsController {
   constructor(private readonly carsService: CarsService) {}
 
   @Get()
-  findAll(
-    @CurrentAgency() agencyId: string,
-    @Query() query: CarQueryDto,
-  ) {
+  findAll(@CurrentAgency() agencyId: string, @Query() query: CarQueryDto) {
     return this.carsService.findAll(agencyId, query);
   }
 
@@ -71,10 +68,7 @@ export class CarsController {
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(AgencyUserRole.OWNER, AgencyUserRole.MANAGER)
-  softDelete(
-    @CurrentAgency() agencyId: string,
-    @Param('id') carId: string,
-  ) {
+  softDelete(@CurrentAgency() agencyId: string, @Param('id') carId: string) {
     return this.carsService.softDelete(carId, agencyId);
   }
 

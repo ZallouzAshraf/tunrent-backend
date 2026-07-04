@@ -55,10 +55,7 @@ export class NotificationsService {
     );
   }
 
-  async findByUser(
-    userId: string,
-    agencyId?: string,
-  ): Promise<Notification[]> {
+  async findByUser(userId: string, agencyId?: string): Promise<Notification[]> {
     const where: { userId: string; agencyId?: string } = { userId };
 
     if (agencyId) {
@@ -89,7 +86,10 @@ export class NotificationsService {
     return notification;
   }
 
-  async markAllRead(userId: string, agencyId?: string): Promise<{ updated: number }> {
+  async markAllRead(
+    userId: string,
+    agencyId?: string,
+  ): Promise<{ updated: number }> {
     const qb = this.notificationRepo
       .createQueryBuilder()
       .update(Notification)

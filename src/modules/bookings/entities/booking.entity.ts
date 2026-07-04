@@ -11,7 +11,11 @@ import {
   OneToOne,
   OneToMany,
 } from 'typeorm';
-import { BookingStatus, BookingSource, CancelledBy } from '../../../common/enums';
+import {
+  BookingStatus,
+  BookingSource,
+  CancelledBy,
+} from '../../../common/enums';
 import { Agency } from '../../agencies/entities/agency.entity';
 import { Car } from '../../cars/entities/car.entity';
 import { User } from '../../users/entities/user.entity';
@@ -32,7 +36,12 @@ export class Booking {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'booking_reference', type: 'varchar', length: 20, unique: true })
+  @Column({
+    name: 'booking_reference',
+    type: 'varchar',
+    length: 20,
+    unique: true,
+  })
   bookingReference: string;
 
   @Column({ name: 'agency_id', type: 'uuid' })
@@ -59,7 +68,12 @@ export class Booking {
   @Column({ name: 'client_cin', type: 'varchar', length: 8, nullable: true })
   clientCin: string | null;
 
-  @Column({ name: 'client_driving_license', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'client_driving_license',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   clientDrivingLicense: string | null;
 
   @Column({ name: 'start_date', type: 'date' })
@@ -83,7 +97,13 @@ export class Booking {
   @Column({ name: 'total_price', type: 'decimal', precision: 10, scale: 2 })
   totalPrice: number;
 
-  @Column({ name: 'deposit_amount', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({
+    name: 'deposit_amount',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
   depositAmount: number | null;
 
   @Column({ type: 'enum', enum: BookingStatus, default: BookingStatus.PENDING })
@@ -95,7 +115,12 @@ export class Booking {
   @Column({ name: 'cancellation_reason', type: 'text', nullable: true })
   cancellationReason: string | null;
 
-  @Column({ name: 'cancelled_by', type: 'enum', enum: CancelledBy, nullable: true })
+  @Column({
+    name: 'cancelled_by',
+    type: 'enum',
+    enum: CancelledBy,
+    nullable: true,
+  })
   cancelledBy: CancelledBy | null;
 
   @Column({ name: 'client_notes', type: 'text', nullable: true })
@@ -116,7 +141,11 @@ export class Booking {
   @Column({ name: 'dropoff_at', type: 'timestamp', nullable: true })
   dropoffAt: Date | null;
 
-  @Column({ type: 'enum', enum: BookingSource, default: BookingSource.MARKETPLACE })
+  @Column({
+    type: 'enum',
+    enum: BookingSource,
+    default: BookingSource.MARKETPLACE,
+  })
   source: BookingSource;
 
   @CreateDateColumn({ name: 'created_at' })

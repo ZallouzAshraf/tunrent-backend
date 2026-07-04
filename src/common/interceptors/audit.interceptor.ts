@@ -26,18 +26,18 @@ export class AuditInterceptor implements NestInterceptor {
     }
 
     return next.handle().pipe(
-      tap(async () => {
-        try {
-          await this.auditLogRepo.save({
+      tap(() => {
+        void this.auditLogRepo
+          .save({
             agencyId: request.agencyId || request.user?.agencyId || null,
             userId: request.user?.sub || null,
-            action: `${request.route?.path || request.url}:${method}`,
+            action: `${String(request.route?.path ?? request.url)}:${method}`,
             ipAddress: request.ip,
             userAgent: request.headers['user-agent'] || null,
+          })
+          .catch(() => {
+            // Audit failures should not break the request
           });
-        } catch {
-          // Audit failures should not break the request
-        }
       }),
     );
   }

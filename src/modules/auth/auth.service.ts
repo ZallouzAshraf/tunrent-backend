@@ -66,8 +66,7 @@ export interface DashboardAgencySelectionResponse {
 }
 
 export type DashboardLoginResult =
-  | SessionResult
-  | DashboardAgencySelectionResponse;
+  SessionResult | DashboardAgencySelectionResponse;
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -119,11 +118,7 @@ export class AuthService implements OnModuleInit {
     });
 
     const saved = await this.userRepo.save(user);
-    await this.sendVerificationEmail(
-      email,
-      saved.firstName,
-      verificationCode,
-    );
+    await this.sendVerificationEmail(email, saved.firstName, verificationCode);
 
     return {
       message: 'Registration successful. Please verify your email.',
@@ -163,7 +158,9 @@ export class AuthService implements OnModuleInit {
     let membership = activeMemberships[0];
 
     if (dto.agencyId) {
-      const selected = activeMemberships.find((m) => m.agencyId === dto.agencyId);
+      const selected = activeMemberships.find(
+        (m) => m.agencyId === dto.agencyId,
+      );
       if (!selected) {
         throw new UnauthorizedException('Not an active member of this agency');
       }
@@ -319,9 +316,7 @@ export class AuthService implements OnModuleInit {
     return { message: 'Password reset successfully' };
   }
 
-  async verifyEmailCode(
-    dto: VerifyEmailCodeDto,
-  ): Promise<{ message: string }> {
+  async verifyEmailCode(dto: VerifyEmailCodeDto): Promise<{ message: string }> {
     const email = dto.email.toLowerCase().trim();
     const codeHash = this.hashToken(dto.code.trim());
     const user = await this.userRepo.findOne({ where: { email } });
@@ -416,8 +411,10 @@ export class AuthService implements OnModuleInit {
     };
 
     const accessToken = await this.generateAccessToken(payload);
-    const { refreshToken, expiresAt } =
-      await this.issueRefreshToken(payload, meta);
+    const { refreshToken, expiresAt } = await this.issueRefreshToken(
+      payload,
+      meta,
+    );
 
     return {
       accessToken,
@@ -456,7 +453,7 @@ export class AuthService implements OnModuleInit {
       },
     );
 
-    const decoded = this.jwtService.decode(refreshToken) as { exp?: number };
+    const decoded = this.jwtService.decode(refreshToken);
     const expiresAt = decoded?.exp
       ? new Date(decoded.exp * 1000)
       : this.addDays(7);

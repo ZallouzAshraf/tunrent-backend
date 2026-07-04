@@ -145,11 +145,7 @@ export class AvailabilityService {
       throw new BadRequestException('End date must be after start date');
     }
 
-    const available = await this.isCarAvailable(
-      dto.carId,
-      startDate,
-      endDate,
-    );
+    const available = await this.isCarAvailable(dto.carId, startDate, endDate);
 
     if (!available) {
       throw new BadRequestException(

@@ -29,10 +29,7 @@ export class DashboardBookingsController {
   ) {}
 
   @Get()
-  findAll(
-    @CurrentAgency() agencyId: string,
-    @Query() query: BookingQueryDto,
-  ) {
+  findAll(@CurrentAgency() agencyId: string, @Query() query: BookingQueryDto) {
     return this.bookingsService.findAllDashboard(agencyId, query);
   }
 
@@ -47,11 +44,7 @@ export class DashboardBookingsController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateDashboardBookingDto,
   ) {
-    return this.bookingsService.createDashboardBooking(
-      dto,
-      agencyId,
-      user.sub,
-    );
+    return this.bookingsService.createDashboardBooking(dto, agencyId, user.sub);
   }
 
   @Get(':id')

@@ -263,7 +263,9 @@ export class MailService implements OnModuleInit {
     }
   }
 
-  private enrichMailContext<T extends object>(context: T): T & {
+  private enrichMailContext<T extends object>(
+    context: T,
+  ): T & {
     frontendUrl: string;
     supportEmail: string;
     currentYear: number;

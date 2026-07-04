@@ -8,10 +8,7 @@ import { AuditLog } from '../audit/entities/audit-log.entity';
 import { AgencyUser } from '../agency-users/entities/agency-user.entity';
 import { MailModule } from '../mail/mail.module';
 import { User } from '../users/entities/user.entity';
-import {
-  AuthController,
-  DashboardAuthController,
-} from './auth.controller';
+import { AuthController, DashboardAuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -28,7 +25,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('jwt.secret')!,
         signOptions: {
-          expiresIn: configService.get<string>('jwt.expiresIn') as `${number}${'s' | 'm' | 'h' | 'd'}`,
+          expiresIn: configService.get<string>(
+            'jwt.expiresIn',
+          ) as `${number}${'s' | 'm' | 'h' | 'd'}`,
         },
       }),
     }),

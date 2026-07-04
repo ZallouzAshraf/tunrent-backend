@@ -70,7 +70,9 @@ export class AgencyUsersService {
 
       if (existing) {
         if (existing.status === AgencyUserStatus.INVITED) {
-          throw new ConflictException('An invitation is already pending for this user');
+          throw new ConflictException(
+            'An invitation is already pending for this user',
+          );
         }
         throw new ConflictException('User is already a member of this agency');
       }
@@ -88,7 +90,9 @@ export class AgencyUsersService {
     }
 
     const invitationToken = randomBytes(32).toString('hex');
-    const inviter = await this.userRepo.findOne({ where: { id: invitedByUserId } });
+    const inviter = await this.userRepo.findOne({
+      where: { id: invitedByUserId },
+    });
 
     const membership = this.agencyUserRepo.create({
       agencyId,
@@ -179,7 +183,9 @@ export class AgencyUsersService {
     }
 
     if (dto.role === AgencyUserRole.OWNER) {
-      throw new BadRequestException('Cannot assign owner role via team management');
+      throw new BadRequestException(
+        'Cannot assign owner role via team management',
+      );
     }
 
     member.role = dto.role;
@@ -197,7 +203,10 @@ export class AgencyUsersService {
     return this.agencyUserRepo.save(member);
   }
 
-  async remove(agencyId: string, memberId: string): Promise<{ message: string }> {
+  async remove(
+    agencyId: string,
+    memberId: string,
+  ): Promise<{ message: string }> {
     const member = await this.findMemberOrFail(agencyId, memberId);
 
     if (member.role === AgencyUserRole.OWNER) {

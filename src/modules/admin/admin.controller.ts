@@ -85,10 +85,7 @@ export class AdminController {
   }
 
   @Patch('plan-requests/:id/approve')
-  approvePlanRequest(
-    @Param('id') id: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  approvePlanRequest(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.billingService.approvePlanRequest(id, user.sub);
   }
 

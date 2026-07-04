@@ -47,7 +47,12 @@ export class Agency {
   @Column({ type: 'varchar', length: 20 })
   phone: string;
 
-  @Column({ name: 'phone_whatsapp', type: 'varchar', length: 20, nullable: true })
+  @Column({
+    name: 'phone_whatsapp',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
   phoneWhatsapp: string | null;
 
   @Column({ type: 'text' })
@@ -68,7 +73,12 @@ export class Agency {
   @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
   longitude: number | null;
 
-  @Column({ name: 'patente_number', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'patente_number',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   patenteNumber: string | null;
 
   @Column({ name: 'patente_url', type: 'text', nullable: true })
@@ -102,7 +112,13 @@ export class Agency {
   @Column({ name: 'is_featured', type: 'boolean', default: false })
   isFeatured: boolean;
 
-  @Column({ name: 'avg_rating', type: 'decimal', precision: 3, scale: 2, default: 0 })
+  @Column({
+    name: 'avg_rating',
+    type: 'decimal',
+    precision: 3,
+    scale: 2,
+    default: 0,
+  })
   avgRating: number;
 
   @Column({ name: 'total_reviews', type: 'int', default: 0 })

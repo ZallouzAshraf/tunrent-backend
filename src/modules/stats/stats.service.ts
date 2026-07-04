@@ -18,23 +18,28 @@ export class StatsService {
   ) {}
 
   async getOverview(agencyId: string) {
-    const [totalBookings, pendingBookings, activeBookings, totalCars, availableCars] =
-      await Promise.all([
-        this.bookingRepo.count({ where: { agencyId } }),
-        this.bookingRepo.count({
-          where: { agencyId, status: BookingStatus.PENDING },
-        }),
-        this.bookingRepo.count({
-          where: {
-            agencyId,
-            status: In([BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS]),
-          },
-        }),
-        this.carRepo.count({ where: { agencyId } }),
-        this.carRepo.count({
-          where: { agencyId, status: CarStatus.AVAILABLE },
-        }),
-      ]);
+    const [
+      totalBookings,
+      pendingBookings,
+      activeBookings,
+      totalCars,
+      availableCars,
+    ] = await Promise.all([
+      this.bookingRepo.count({ where: { agencyId } }),
+      this.bookingRepo.count({
+        where: { agencyId, status: BookingStatus.PENDING },
+      }),
+      this.bookingRepo.count({
+        where: {
+          agencyId,
+          status: In([BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS]),
+        },
+      }),
+      this.carRepo.count({ where: { agencyId } }),
+      this.carRepo.count({
+        where: { agencyId, status: CarStatus.AVAILABLE },
+      }),
+    ]);
 
     const revenueResult = await this.paymentRepo
       .createQueryBuilder('p')
@@ -61,7 +66,11 @@ export class StatsService {
 
   async getBookingsChart(agencyId: string, months = 6) {
     const now = new Date();
-    const startDate = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
+    const startDate = new Date(
+      now.getFullYear(),
+      now.getMonth() - months + 1,
+      1,
+    );
 
     const bookings = await this.bookingRepo
       .createQueryBuilder('b')

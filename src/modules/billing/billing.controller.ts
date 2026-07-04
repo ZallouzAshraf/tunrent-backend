@@ -32,11 +32,7 @@ export class DashboardBillingController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreatePlanChangeRequestDto,
   ) {
-    return this.billingService.createPlanChangeRequest(
-      agencyId,
-      user.sub,
-      dto,
-    );
+    return this.billingService.createPlanChangeRequest(agencyId, user.sub, dto);
   }
 
   @Delete('plan-requests/pending')

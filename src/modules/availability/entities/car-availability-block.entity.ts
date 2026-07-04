@@ -48,7 +48,9 @@ export class CarAvailabilityBlock {
   @JoinColumn({ name: 'agency_id' })
   agency: Agency;
 
-  @ManyToOne(() => Car, (car) => car.availabilityBlocks, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Car, (car) => car.availabilityBlocks, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'car_id' })
   car: Car;
 

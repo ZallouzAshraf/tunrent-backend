@@ -11,11 +11,6 @@ import { AuditInterceptor } from './interceptors/audit.interceptor';
 @Module({
   imports: [TypeOrmModule.forFeature([AgencyUser, Agency, AuditLog])],
   providers: [AgencyMemberGuard, RolesGuard, AuditInterceptor],
-  exports: [
-    TypeOrmModule,
-    AgencyMemberGuard,
-    RolesGuard,
-    AuditInterceptor,
-  ],
+  exports: [TypeOrmModule, AgencyMemberGuard, RolesGuard, AuditInterceptor],
 })
 export class CommonModule {}

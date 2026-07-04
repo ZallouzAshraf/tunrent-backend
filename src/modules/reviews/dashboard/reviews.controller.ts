@@ -22,10 +22,7 @@ export class DashboardReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
   @Get()
-  findAll(
-    @CurrentAgency() agencyId: string,
-    @Query() query: ReviewQueryDto,
-  ) {
+  findAll(@CurrentAgency() agencyId: string, @Query() query: ReviewQueryDto) {
     return this.reviewsService.findAll(agencyId, query);
   }
 

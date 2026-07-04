@@ -41,7 +41,9 @@ async function bootstrap() {
   if (!isProd) {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('TunRent API')
-      .setDescription('Plateforme SaaS Multi-Tenant de Location de Voitures — Tunisie')
+      .setDescription(
+        'Plateforme SaaS Multi-Tenant de Location de Voitures — Tunisie',
+      )
       .setVersion('1.0')
       .addBearerAuth()
       .build();
@@ -59,4 +61,4 @@ async function bootstrap() {
   }
 }
 
-bootstrap();
+void bootstrap();

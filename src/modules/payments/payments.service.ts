@@ -184,7 +184,7 @@ export class PaymentsService {
         amount,
         method: PaymentMethod.CASH,
         type: PaymentType.FULL_PAYMENT,
-        notes: 'Encaissement espèces à l\'agence',
+        notes: "Encaissement espèces à l'agence",
       },
       userId,
     );

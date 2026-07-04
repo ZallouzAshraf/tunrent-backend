@@ -60,7 +60,9 @@ async function main(): Promise<void> {
   }
 
   const to = config.testRecipient || config.adminEmail;
-  const transport = nodemailer.createTransport(buildSmtpTransportOptions(config));
+  const transport = nodemailer.createTransport(
+    buildSmtpTransportOptions(config),
+  );
   await transport.sendMail({
     from: config.from,
     to,

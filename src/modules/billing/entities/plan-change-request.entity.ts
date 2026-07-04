@@ -8,10 +8,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import {
-  AgencyPlan,
-  PlanChangeRequestStatus,
-} from '../../../common/enums';
+import { AgencyPlan, PlanChangeRequestStatus } from '../../../common/enums';
 import { Agency } from '../../agencies/entities/agency.entity';
 import { User } from '../../users/entities/user.entity';
 

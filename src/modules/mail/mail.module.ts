@@ -4,7 +4,9 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/adapters/handlebars.ad
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import appConfig from '../../config/app.config';
-import mailConfig, { buildSmtpTransportOptions } from '../../config/mail.config';
+import mailConfig, {
+  buildSmtpTransportOptions,
+} from '../../config/mail.config';
 import { registerMailTemplatePartials } from './mail-templates.setup';
 import { MailService } from './mail.service';
 

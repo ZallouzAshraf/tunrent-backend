@@ -47,7 +47,9 @@ async function main() {
     agency.rejectionReason = null;
     await repo.save(agency);
 
-    console.log(`✅ "${agency.name}" (${agency.slug}) activée — visible sur /agencies et /cars`);
+    console.log(
+      `✅ "${agency.name}" (${agency.slug}) activée — visible sur /agencies et /cars`,
+    );
   } finally {
     await dataSource.destroy();
   }

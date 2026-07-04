@@ -50,7 +50,7 @@ async function main() {
     if (!agency) {
       throw new Error(
         `Agence introuvable (slug="${agencySlug}"). ` +
-          'Créez l\'agence ou définissez SEED_AGENCY_SLUG.',
+          "Créez l'agence ou définissez SEED_AGENCY_SLUG.",
       );
     }
 
@@ -118,7 +118,9 @@ async function main() {
     const auto = cars.filter((c) => c.transmission === 'automatic').length;
     const manual = cars.length - auto;
 
-    console.log(`✅ ${cars.length} voitures ajoutées pour "${agency.name}" (${agency.slug})`);
+    console.log(
+      `✅ ${cars.length} voitures ajoutées pour "${agency.name}" (${agency.slug})`,
+    );
     console.log(`   → ${manual} manuelle(s), ${auto} automatique(s)`);
     console.log(
       `   → Prix: ${Math.min(...cars.map((c) => Number(c.pricePerDay)))}–${Math.max(...cars.map((c) => Number(c.pricePerDay)))} TND/jour`,

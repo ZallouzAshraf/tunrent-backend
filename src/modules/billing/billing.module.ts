@@ -7,10 +7,7 @@ import { DashboardBillingController } from './billing.controller';
 import { PlanChangeRequest } from './entities/plan-change-request.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([PlanChangeRequest, Agency]),
-    AuthModule,
-  ],
+  imports: [TypeOrmModule.forFeature([PlanChangeRequest, Agency]), AuthModule],
   controllers: [DashboardBillingController],
   providers: [BillingService],
   exports: [BillingService],

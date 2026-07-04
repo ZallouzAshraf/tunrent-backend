@@ -10,10 +10,7 @@ import {
   getPlanMonthlyPrice,
   PLAN_LIMITS,
 } from '../../common/constants/plan-pricing';
-import {
-  AgencyPlan,
-  PlanChangeRequestStatus,
-} from '../../common/enums';
+import { PlanChangeRequestStatus } from '../../common/enums';
 import {
   buildPaginatedResult,
   normalizePagination,
@@ -38,7 +35,11 @@ export class BillingService {
     userId: string,
     dto: CreatePlanChangeRequestDto,
   ): Promise<PlanChangeRequest> {
-    if (!BILLABLE_PLANS.includes(dto.requestedPlan as (typeof BILLABLE_PLANS)[number])) {
+    if (
+      !BILLABLE_PLANS.includes(
+        dto.requestedPlan as (typeof BILLABLE_PLANS)[number],
+      )
+    ) {
       throw new BadRequestException(
         'Seuls les plans Starter, Pro et Enterprise peuvent être demandés',
       );
