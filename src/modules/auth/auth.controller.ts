@@ -20,8 +20,9 @@ import {
   clearAuthCookies,
   REFRESH_COOKIE,
   setAuthCookies,
+  type AuthCookieContext,
 } from './auth-cookies';
-import { AuthService } from './auth.service';
+import { AuthService, type SessionResult } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -51,6 +52,13 @@ function toLoginBody(result: {
   };
 }
 
+function authCookieContext(result: SessionResult): AuthCookieContext {
+  return {
+    role: result.user.roleGlobal ?? 'client',
+    agencyId: result.agencyId ?? null,
+  };
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -71,7 +79,12 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.login(dto, requestMeta(req));
-    setAuthCookies(res, result.refreshToken, result.refreshTokenExpiresAt);
+    setAuthCookies(
+      res,
+      result.refreshToken,
+      result.refreshTokenExpiresAt,
+      authCookieContext(result),
+    );
     return toLoginBody(result);
   }
 
@@ -92,7 +105,12 @@ export class AuthController {
       rawToken,
       requestMeta(req),
     );
-    setAuthCookies(res, result.refreshToken, result.refreshTokenExpiresAt);
+    setAuthCookies(
+      res,
+      result.refreshToken,
+      result.refreshTokenExpiresAt,
+      authCookieContext(result),
+    );
     return toLoginBody(result);
   }
 
@@ -181,7 +199,12 @@ export class DashboardAuthController {
       return result;
     }
 
-    setAuthCookies(res, result.refreshToken, result.refreshTokenExpiresAt);
+    setAuthCookies(
+      res,
+      result.refreshToken,
+      result.refreshTokenExpiresAt,
+      authCookieContext(result),
+    );
     return toLoginBody(result);
   }
 }

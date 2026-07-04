@@ -78,6 +78,14 @@ export class ReviewsService {
     return this.reviewRepo.save(review);
   }
 
+  async findByClient(userId: string): Promise<Review[]> {
+    return this.reviewRepo.find({
+      where: { clientUserId: userId },
+      relations: { car: true, booking: true },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async create(dto: CreateReviewDto): Promise<Review> {
     const booking = await this.bookingRepo.findOne({
       where: { id: dto.bookingId },

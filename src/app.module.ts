@@ -24,6 +24,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { ClientModule } from './modules/client/client.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { CommonModule } from './common/common.module';
 import { DatabaseModule } from './database/database.module';
@@ -58,6 +59,7 @@ import { DatabaseModule } from './database/database.module';
     ReviewsModule,
     StatsModule,
     BillingModule,
+    ClientModule,
   ],
   controllers: [AppController],
   providers: [

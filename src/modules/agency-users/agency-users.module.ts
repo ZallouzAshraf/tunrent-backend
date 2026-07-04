@@ -6,6 +6,7 @@ import { MailModule } from '../mail/mail.module';
 import { User } from '../users/entities/user.entity';
 import { AgencyUsersController } from './agency-users.controller';
 import { AgencyUsersService } from './agency-users.service';
+import { TeamInvitationController } from './team-invitation.controller';
 import { AgencyUser } from './entities/agency-user.entity';
 
 @Module({
@@ -14,7 +15,7 @@ import { AgencyUser } from './entities/agency-user.entity';
     MailModule,
     AuthModule,
   ],
-  controllers: [AgencyUsersController],
+  controllers: [AgencyUsersController, TeamInvitationController],
   providers: [AgencyUsersService],
   exports: [AgencyUsersService, TypeOrmModule],
 })

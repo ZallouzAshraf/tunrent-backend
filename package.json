@@ -21,6 +21,7 @@
     "seed:cars": "ts-node -r tsconfig-paths/register src/database/seeds/seed-agency-cars.ts",
     "seed:car-images": "ts-node -r tsconfig-paths/register src/database/seeds/seed-car-images.ts",
     "seed:activate-agency": "ts-node -r tsconfig-paths/register src/database/seeds/activate-agency.ts",
+    "seed:admin": "ts-node -r tsconfig-paths/register src/database/seeds/seed-admin.ts",
     "mail:test": "ts-node -r tsconfig-paths/register src/scripts/test-mail.ts"
   },
   "dependencies": {

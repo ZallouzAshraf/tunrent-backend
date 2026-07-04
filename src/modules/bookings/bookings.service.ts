@@ -470,7 +470,7 @@ export class BookingsService {
 
     return this.bookingRepo.find({
       where: { clientUserId: userId },
-      relations: { car: true, agency: true },
+      relations: { car: true, agency: true, review: true },
       order: { createdAt: 'DESC' },
     });
   }
@@ -482,7 +482,7 @@ export class BookingsService {
     await this.findClientBookings(userId);
     const booking = await this.bookingRepo.findOne({
       where: { id, clientUserId: userId },
-      relations: { car: true, agency: true },
+      relations: { car: true, agency: true, review: true },
     });
 
     if (!booking) {
