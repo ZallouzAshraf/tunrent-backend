@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import {
   AgencyStatus,
   BookingStatus,
   CarStatus,
 } from '../../common/enums';
+import { escapeIlike } from '../../common/utils/escape-ilike.util';
 import {
   buildPaginatedResult,
   normalizePagination,
@@ -35,6 +36,12 @@ type PublicAgency = Omit<
 >;
 
 export type MarketplaceCar = Omit<Car, 'agency'> & { agency: PublicAgency };
+
+const UNAVAILABLE_BOOKING_STATUSES = [
+  BookingStatus.PENDING,
+  BookingStatus.CONFIRMED,
+  BookingStatus.IN_PROGRESS,
+] as const;
 
 @Injectable()
 export class MarketplaceService {
@@ -83,8 +90,36 @@ export class MarketplaceService {
       qb.andWhere('car.hasAc = :hasAc', { hasAc: filters.has_ac });
     }
 
+    if (filters.has_gps !== undefined) {
+      qb.andWhere('car.hasGps = :hasGps', { hasGps: filters.has_gps });
+    }
+
+    if (filters.has_bluetooth !== undefined) {
+      qb.andWhere('car.hasBluetooth = :hasBluetooth', {
+        hasBluetooth: filters.has_bluetooth,
+      });
+    }
+
+    if (filters.has_child_seat !== undefined) {
+      qb.andWhere('car.hasChildSeat = :hasChildSeat', {
+        hasChildSeat: filters.has_child_seat,
+      });
+    }
+
+    if (filters.fuel_type) {
+      qb.andWhere('car.fuelType = :fuelType', { fuelType: filters.fuel_type });
+    }
+
     if (filters.seats !== undefined) {
       qb.andWhere('car.seats >= :seats', { seats: filters.seats });
+    }
+
+    if (filters.search?.trim()) {
+      const term = `%${escapeIlike(filters.search.trim())}%`;
+      qb.andWhere(
+        `(car.brand ILIKE :search ESCAPE '\\' OR car.model ILIKE :search ESCAPE '\\' OR car.description ILIKE :search ESCAPE '\\')`,
+        { search: term },
+      );
     }
 
     if (filters.min_price !== undefined) {
@@ -100,45 +135,25 @@ export class MarketplaceService {
     }
 
     if (filters.start_date && filters.end_date) {
-      qb.andWhere(
-        `car.id NOT IN (
-          SELECT booking.car_id FROM bookings booking
-          WHERE booking.status IN (:...bookingStatuses)
-          AND booking.start_date <= :endDate
-          AND booking.end_date >= :startDate
-        )`,
-        {
-          bookingStatuses: [
-            BookingStatus.CONFIRMED,
-            BookingStatus.IN_PROGRESS,
-          ],
-          startDate: filters.start_date,
-          endDate: filters.end_date,
-        },
-      );
-
-      qb.andWhere(
-        `car.id NOT IN (
-          SELECT block.car_id FROM car_availability_blocks block
-          WHERE block.start_date <= :endDate
-          AND block.end_date >= :startDate
-        )`,
-        {
-          startDate: filters.start_date,
-          endDate: filters.end_date,
-        },
+      this.applyAvailabilityFilter(
+        qb,
+        filters.start_date,
+        filters.end_date,
       );
     }
 
     switch (filters.sort) {
       case MarketplaceSort.PRICE_ASC:
-        qb.orderBy('car.pricePerDay', 'ASC');
+        qb.orderBy('car.pricePerDay', 'ASC').addOrderBy('car.createdAt', 'DESC');
         break;
       case MarketplaceSort.PRICE_DESC:
-        qb.orderBy('car.pricePerDay', 'DESC');
+        qb.orderBy('car.pricePerDay', 'DESC').addOrderBy('car.createdAt', 'DESC');
         break;
       case MarketplaceSort.RATING_DESC:
-        qb.orderBy('agency.avgRating', 'DESC');
+        qb.orderBy('agency.avgRating', 'DESC', 'NULLS LAST').addOrderBy(
+          'car.createdAt',
+          'DESC',
+        );
         break;
       default:
         qb.orderBy('car.createdAt', 'DESC');
@@ -193,9 +208,10 @@ export class MarketplaceService {
     }
 
     if (filters.search?.trim()) {
+      const term = `%${escapeIlike(filters.search.trim())}%`;
       qb.andWhere(
-        '(agency.name ILIKE :search OR agency.city ILIKE :search OR agency.description ILIKE :search)',
-        { search: `%${filters.search.trim()}%` },
+        `(agency.name ILIKE :search ESCAPE '\\' OR agency.city ILIKE :search ESCAPE '\\' OR agency.description ILIKE :search ESCAPE '\\')`,
+        { search: term },
       );
     }
 
@@ -242,6 +258,37 @@ export class MarketplaceService {
       agency: this.toPublicAgency(agency),
       cars,
     };
+  }
+
+  private applyAvailabilityFilter(
+    qb: SelectQueryBuilder<Car>,
+    startDate: string,
+    endDate: string,
+  ): void {
+    qb.andWhere(
+      `NOT EXISTS (
+        SELECT 1 FROM bookings booking
+        WHERE booking.car_id = car.id
+        AND booking.status IN (:...bookingStatuses)
+        AND booking.start_date <= :endDate
+        AND booking.end_date >= :startDate
+      )`,
+      {
+        bookingStatuses: [...UNAVAILABLE_BOOKING_STATUSES],
+        startDate,
+        endDate,
+      },
+    );
+
+    qb.andWhere(
+      `NOT EXISTS (
+        SELECT 1 FROM car_availability_blocks block
+        WHERE block.car_id = car.id
+        AND block.start_date <= :endDate
+        AND block.end_date >= :startDate
+      )`,
+      { startDate, endDate },
+    );
   }
 
   private toPublicAgency(agency: Agency): PublicAgency {

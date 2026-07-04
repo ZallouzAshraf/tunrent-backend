@@ -37,6 +37,9 @@ export interface PickupLocation {
 @Index(['category'])
 @Index(['fuelType'])
 @Index(['pricePerDay'])
+@Index(['status', 'category', 'pricePerDay'])
+@Index(['status', 'fuelType', 'transmission'])
+@Index(['status', 'seats'])
 export class Car {
   @PrimaryGeneratedColumn('uuid')
   id: string;

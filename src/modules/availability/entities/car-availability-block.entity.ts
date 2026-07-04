@@ -15,6 +15,7 @@ import { User } from '../../users/entities/user.entity';
 @Index(['carId'])
 @Index(['startDate'])
 @Index(['endDate'])
+@Index(['carId', 'startDate', 'endDate'])
 export class CarAvailabilityBlock {
   @PrimaryGeneratedColumn('uuid')
   id: string;

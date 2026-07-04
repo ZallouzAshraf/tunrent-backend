@@ -7,14 +7,19 @@ import {
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 import {
   CarCategory,
+  FuelType,
   Governorate,
   Transmission,
 } from '../../../common/enums';
+import { ParseQueryBoolean } from '../../../common/utils/parse-query-boolean.util';
 import { MAX_LIMIT } from '../../../common/utils/pagination.util';
+import { IsValidMarketplaceDateRange } from '../../../common/validators/marketplace-date-range.validator';
 
 export enum MarketplaceSort {
   PRICE_ASC = 'price_asc',
@@ -33,6 +38,7 @@ export class MarketplaceCarSearchDto {
 
   @IsOptional()
   @IsDateString()
+  @IsValidMarketplaceDateRange()
   start_date?: string;
 
   @IsOptional()
@@ -56,15 +62,40 @@ export class MarketplaceCarSearchDto {
   transmission?: Transmission;
 
   @IsOptional()
-  @Type(() => Boolean)
+  @IsEnum(FuelType)
+  fuel_type?: FuelType;
+
+  @IsOptional()
+  @ParseQueryBoolean()
   @IsBoolean()
   has_ac?: boolean;
+
+  @IsOptional()
+  @ParseQueryBoolean()
+  @IsBoolean()
+  has_gps?: boolean;
+
+  @IsOptional()
+  @ParseQueryBoolean()
+  @IsBoolean()
+  has_bluetooth?: boolean;
+
+  @IsOptional()
+  @ParseQueryBoolean()
+  @IsBoolean()
+  has_child_seat?: boolean;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   seats?: number;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(100)
+  search?: string;
 
   @IsOptional()
   @IsEnum(MarketplaceSort)
@@ -91,10 +122,12 @@ export class MarketplaceAgencySearchDto {
 
   @IsOptional()
   @IsString()
+  @MinLength(2)
+  @MaxLength(100)
   search?: string;
 
   @IsOptional()
-  @Type(() => Boolean)
+  @ParseQueryBoolean()
   @IsBoolean()
   is_featured?: boolean;
 

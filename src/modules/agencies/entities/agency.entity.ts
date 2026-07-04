@@ -21,6 +21,7 @@ import { Notification } from '../../notifications/entities/notification.entity';
 @Index(['governorate'])
 @Index(['status'])
 @Index(['plan'])
+@Index(['status', 'governorate', 'isFeatured'])
 export class Agency {
   @PrimaryGeneratedColumn('uuid')
   id: string;

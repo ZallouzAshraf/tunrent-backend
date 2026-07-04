@@ -27,6 +27,7 @@ import { Payment } from '../../payments/entities/payment.entity';
 @Index(['startDate'])
 @Index(['endDate'])
 @Index(['bookingReference'])
+@Index(['carId', 'status', 'startDate', 'endDate'])
 export class Booking {
   @PrimaryGeneratedColumn('uuid')
   id: string;
