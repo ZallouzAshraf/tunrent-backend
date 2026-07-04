@@ -11,6 +11,7 @@ import {
   BookingConfirmedMailContext,
   BookingRejectedMailContext,
   BookingRequestAgencyMailContext,
+  ContactMessageMailContext,
   ResetPasswordMailContext,
   TeamInvitationMailContext,
   VerifyEmailMailContext,
@@ -180,6 +181,34 @@ export class MailService implements OnModuleInit {
       'agency-approved',
       context,
     );
+  }
+
+  /** @returns true if the message was handed off to SMTP */
+  async sendContactMessage(
+    to: string,
+    context: ContactMessageMailContext,
+  ): Promise<boolean> {
+    if (!this.configService.get<boolean>('mail.enabled')) {
+      this.logger.warn(`Mail disabled — skipped contact from ${context.email}`);
+      return false;
+    }
+
+    try {
+      await this.mailerService.sendMail({
+        to,
+        replyTo: context.email,
+        subject: `[TunRent Contact] ${context.subject}`,
+        template: 'contact-message',
+        context,
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send contact email from ${context.email}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      return false;
+    }
   }
 
   private async send(

@@ -33,4 +33,10 @@ export class MarketplaceController {
   getAgencyBySlug(@Param('slug') slug: string) {
     return this.marketplaceService.getAgencyBySlug(slug);
   }
+
+  @Public()
+  @Get('reviews/featured')
+  getFeaturedReviews() {
+    return this.marketplaceService.getFeaturedReviews();
+  }
 }

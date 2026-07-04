@@ -78,6 +78,39 @@ export class ReviewsService {
     return this.reviewRepo.save(review);
   }
 
+  async findFeaturedPublic(limit = 8): Promise<
+    Array<{
+      id: string;
+      clientName: string;
+      agencyName: string;
+      governorate: string | null;
+      rating: number;
+      comment: string;
+      createdAt: Date;
+    }>
+  > {
+    const reviews = await this.reviewRepo
+      .createQueryBuilder('review')
+      .leftJoinAndSelect('review.agency', 'agency')
+      .where('review.isVisible = true')
+      .andWhere('review.comment IS NOT NULL')
+      .andWhere("TRIM(review.comment) <> ''")
+      .orderBy('review.ratingOverall', 'DESC')
+      .addOrderBy('review.createdAt', 'DESC')
+      .take(limit)
+      .getMany();
+
+    return reviews.map((review) => ({
+      id: review.id,
+      clientName: review.clientName,
+      agencyName: review.agency?.name ?? 'Agence partenaire',
+      governorate: review.agency?.governorate ?? review.agency?.city ?? null,
+      rating: review.ratingOverall,
+      comment: review.comment!,
+      createdAt: review.createdAt,
+    }));
+  }
+
   async findByClient(userId: string): Promise<Review[]> {
     return this.reviewRepo.find({
       where: { clientUserId: userId },

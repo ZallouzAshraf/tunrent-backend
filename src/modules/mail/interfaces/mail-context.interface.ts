@@ -84,3 +84,10 @@ export interface AgencyApprovedMailContext {
   agencyName: string;
   dashboardUrl: string;
 }
+
+export interface ContactMessageMailContext {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}

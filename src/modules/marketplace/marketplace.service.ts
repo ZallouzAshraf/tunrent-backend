@@ -13,6 +13,7 @@ import {
 } from '../../common/utils/pagination.util';
 import { Agency } from '../agencies/entities/agency.entity';
 import { Car } from '../cars/entities/car.entity';
+import { ReviewsService } from '../reviews/reviews.service';
 import {
   MarketplaceAgencySearchDto,
   MarketplaceCarSearchDto,
@@ -42,7 +43,12 @@ export class MarketplaceService {
     private readonly carRepo: Repository<Car>,
     @InjectRepository(Agency)
     private readonly agencyRepo: Repository<Agency>,
+    private readonly reviewsService: ReviewsService,
   ) {}
+
+  getFeaturedReviews(limit = 8) {
+    return this.reviewsService.findFeaturedPublic(limit);
+  }
 
   async searchCars(
     filters: MarketplaceCarSearchDto,

@@ -25,6 +25,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { ClientModule } from './modules/client/client.module';
+import { LandingModule } from './modules/landing/landing.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { CommonModule } from './common/common.module';
 import { DatabaseModule } from './database/database.module';
@@ -60,6 +61,7 @@ import { DatabaseModule } from './database/database.module';
     StatsModule,
     BillingModule,
     ClientModule,
+    LandingModule,
   ],
   controllers: [AppController],
   providers: [
