@@ -187,9 +187,10 @@ export function buildSmtpTransportOptions(config: SmtpTransportConfig) {
   return {
     host,
     port,
-    // 587/2525 = STARTTLS, 465 = SSL
     secure: port === 465,
     auth: user && pass ? { user, pass } : undefined,
+    connectionTimeout: 8_000,
+    greetingTimeout: 8_000,
     tls: {
       minVersion: 'TLSv1.2' as const,
     },

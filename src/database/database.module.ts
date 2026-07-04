@@ -42,7 +42,14 @@ const entities = [
         username: configService.get<string>('database.username'),
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.name'),
-        ssl: configService.get<boolean | { rejectUnauthorized: false }>('database.ssl'),
+        ssl: configService.get<boolean | { rejectUnauthorized: false }>(
+          'database.ssl',
+        ),
+        migrations: ['dist/database/migrations/*.js'],
+        migrationsRun: configService.get<boolean>('database.migrationsRun'),
+        extra: {
+          connectionTimeoutMillis: 15_000,
+        },
         entities,
         synchronize: configService.get<string>('app.nodeEnv') !== 'production',
         logging: configService.get<string>('app.nodeEnv') === 'development',

@@ -53,9 +53,9 @@ async function bootstrap() {
   }
 
   const port = configService.get<number>('app.port') || 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
-  console.log(`TunRent API running on http://localhost:${port}`);
+  console.log(`TunRent API running on port ${port}`);
   if (!isProd) {
     console.log(`Swagger docs: http://localhost:${port}/api/docs`);
   }

@@ -59,7 +59,12 @@ export class MailService implements OnModuleInit {
       const transport = nodemailer.createTransport(
         buildSmtpTransportOptions({ host, port, user, pass }),
       );
-      await transport.verify();
+      await Promise.race([
+        transport.verify(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('SMTP verify timeout (8s)')), 8000),
+        ),
+      ]);
       this.logger.log(
         `SMTP prêt [${provider}] ${host}:${port} — expéditeur: ${from}`,
       );

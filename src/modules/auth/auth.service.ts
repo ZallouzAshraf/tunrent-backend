@@ -87,7 +87,14 @@ export class AuthService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await this.purgeExpiredTokens();
+    try {
+      await this.purgeExpiredTokens();
+    } catch (error) {
+      this.logger.warn(
+        'Token purge skipped at startup (DB may not be ready yet)',
+        error instanceof Error ? error.message : String(error),
+      );
+    }
   }
 
   async register(
