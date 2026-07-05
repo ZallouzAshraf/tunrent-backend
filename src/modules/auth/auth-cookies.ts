@@ -37,6 +37,18 @@ export function setAuthCookies(
   const isProd = process.env.NODE_ENV === 'production';
   const paths = resolveAuthCookiePaths();
 
+  console.log('[auth-cookies] setAuthCookies', {
+    isProd,
+    nodeEnv: process.env.NODE_ENV,
+    cookiePathPrefix: process.env.COOKIE_PATH_PREFIX ?? '(unset)',
+    paths,
+    cookies: [
+      REFRESH_COOKIE,
+      LOGGED_IN_COOKIE,
+      ...(ctx ? [HOME_COOKIE] : []),
+    ],
+  });
+
   res.cookie(REFRESH_COOKIE, refreshToken, {
     httpOnly: true,
     secure: isProd,

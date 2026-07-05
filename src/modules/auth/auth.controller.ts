@@ -80,6 +80,10 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.login(dto, requestMeta(req));
+    console.log('[auth] POST /auth/login success — calling setAuthCookies', {
+      userId: result.user.id ?? '(unknown)',
+      email: result.user.email ?? '(unknown)',
+    });
     setAuthCookies(
       res,
       result.refreshToken,
