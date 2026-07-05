@@ -1,11 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
-import * as nodemailer from 'nodemailer';
 import {
-  buildSmtpTransportOptions,
   getMailProviderLabel,
   resolveAdminRecipient,
+  verifySmtpConnection,
   type MailProvider,
 } from '../../config/mail.config';
 import {
@@ -56,15 +55,7 @@ export class MailService implements OnModuleInit {
     const from = this.configService.get<string>('mail.from')!;
 
     try {
-      const transport = nodemailer.createTransport(
-        buildSmtpTransportOptions({ host, port, user, pass }),
-      );
-      await Promise.race([
-        transport.verify(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('SMTP verify timeout (8s)')), 8000),
-        ),
-      ]);
+      await verifySmtpConnection({ host, port, user, pass });
       this.logger.log(
         `SMTP prêt [${provider}] ${host}:${port} — expéditeur: ${from}`,
       );

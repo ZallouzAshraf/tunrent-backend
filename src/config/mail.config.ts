@@ -152,7 +152,10 @@ export function resolveMailConfig(): ResolvedMailConfig {
 
   const host = provider === 'smtp' ? explicitHost : preset.host;
   const port =
-    provider === 'smtp' ? (explicitPort ?? preset.port) : preset.port;
+    explicitPort ??
+    (provider === 'brevo' && process.env.NODE_ENV === 'production'
+      ? 465
+      : preset.port);
 
   const from = resolveFromAddress(user);
   const adminEmail = (process.env.MAIL_ADMIN_EMAIL || '').trim();
@@ -183,18 +186,63 @@ export function resolveMailConfig(): ResolvedMailConfig {
 /** Shared SMTP options for Nest MailerModule and standalone scripts. */
 export function buildSmtpTransportOptions(config: SmtpTransportConfig) {
   const { host, port, user, pass } = config;
+  const isProd = process.env.NODE_ENV === 'production';
+  const timeoutMs = isProd ? 30_000 : 12_000;
 
   return {
     host,
     port,
     secure: port === 465,
     auth: user && pass ? { user, pass } : undefined,
-    connectionTimeout: 8_000,
-    greetingTimeout: 8_000,
+    connectionTimeout: timeoutMs,
+    greetingTimeout: timeoutMs,
+    socketTimeout: timeoutMs,
+    requireTLS: port === 587,
+    pool: false,
     tls: {
       minVersion: 'TLSv1.2' as const,
+      servername: host,
     },
   };
+}
+
+export async function verifySmtpConnection(
+  config: SmtpTransportConfig,
+): Promise<void> {
+  const nodemailer = await import('nodemailer');
+  const isProd = process.env.NODE_ENV === 'production';
+  const attempts = isProd ? 3 : 1;
+  const timeoutMs = isProd ? 30_000 : 12_000;
+
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const transport = nodemailer.createTransport(
+      buildSmtpTransportOptions(config),
+    );
+
+    try {
+      await Promise.race([
+        transport.verify(),
+        new Promise<void>((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`SMTP verify timeout (${timeoutMs}ms)`)),
+            timeoutMs,
+          ),
+        ),
+      ]);
+      transport.close();
+      return;
+    } catch (error) {
+      lastError = error;
+      transport.close();
+      if (attempt < attempts) {
+        await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 export default registerAs('mail', () => resolveMailConfig());
