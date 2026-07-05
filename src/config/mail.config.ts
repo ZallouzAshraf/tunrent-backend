@@ -15,6 +15,8 @@ export interface ResolvedMailConfig extends SmtpTransportConfig {
   provider: MailProvider;
   enabled: boolean;
   configured: boolean;
+  useApi: boolean;
+  apiKey: string;
   from: string;
   adminEmail: string;
   testRecipient: string;
@@ -138,12 +140,33 @@ function resolveFromAddress(user: string): string {
   return 'TunRent <noreply@tunrent.tn>';
 }
 
+function resolveMailApiKey(): string {
+  return (process.env.MAIL_API_KEY || '').trim();
+}
+
+export function resolveUseApi(apiKey?: string): boolean {
+  const key = (apiKey ?? resolveMailApiKey()).trim();
+  const transport = (process.env.MAIL_TRANSPORT || '').toLowerCase();
+
+  if (transport === 'api') {
+    return Boolean(key);
+  }
+
+  if (transport === 'smtp') {
+    return false;
+  }
+
+  return Boolean(key) && process.env.NODE_ENV === 'production';
+}
+
 /** Single source of truth for SMTP settings (dev + prod). */
 export function resolveMailConfig(): ResolvedMailConfig {
   const provider = resolveMailProvider();
   const preset = PROVIDER_PRESETS[provider];
   const user = resolveMailUser();
   const pass = resolveMailPass();
+  const apiKey = resolveMailApiKey();
+  const useApi = resolveUseApi(apiKey);
 
   const explicitHost = (process.env.MAIL_HOST || '').trim();
   const explicitPort = process.env.MAIL_PORT
@@ -169,10 +192,15 @@ export function resolveMailConfig(): ResolvedMailConfig {
   const hostOk =
     provider !== 'smtp' || Boolean((process.env.MAIL_HOST || '').trim());
 
+  const smtpConfigured = isMailConfigured(user, pass) && hostOk;
+  const apiConfigured = Boolean(apiKey);
+
   return {
     provider,
     enabled: process.env.MAIL_ENABLED !== 'false',
-    configured: isMailConfigured(user, pass) && hostOk,
+    configured: useApi ? apiConfigured : smtpConfigured,
+    useApi,
+    apiKey,
     host,
     port,
     user,

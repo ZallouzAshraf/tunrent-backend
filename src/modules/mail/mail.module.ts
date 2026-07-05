@@ -7,6 +7,7 @@ import appConfig from '../../config/app.config';
 import mailConfig, {
   buildSmtpTransportOptions,
 } from '../../config/mail.config';
+import { createBrevoApiTransport } from '../../config/brevo-api.transport';
 import { registerMailTemplatePartials } from './mail-templates.setup';
 import { MailService } from './mail.service';
 
@@ -21,13 +22,20 @@ import { MailService } from './mail.service';
         const templatesDir = join(__dirname, 'templates');
         registerMailTemplatePartials(templatesDir);
 
-        const host = configService.get<string>('mail.host')!;
-        const port = configService.get<number>('mail.port')!;
-        const user = configService.get<string>('mail.user')!;
-        const pass = configService.get<string>('mail.pass')!;
+        const useApi = configService.get<boolean>('mail.useApi') ?? false;
+        const apiKey = configService.get<string>('mail.apiKey') ?? '';
+
+        const transport = useApi
+          ? createBrevoApiTransport(apiKey)
+          : buildSmtpTransportOptions({
+              host: configService.get<string>('mail.host')!,
+              port: configService.get<number>('mail.port')!,
+              user: configService.get<string>('mail.user')!,
+              pass: configService.get<string>('mail.pass')!,
+            });
 
         return {
-          transport: buildSmtpTransportOptions({ host, port, user, pass }),
+          transport,
           defaults: {
             from: configService.get<string>('mail.from'),
           },

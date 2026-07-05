@@ -41,10 +41,23 @@ export class MailService implements OnModuleInit {
     }
 
     if (!this.configService.get<boolean>('mail.configured')) {
+      const useApi = this.configService.get<boolean>('mail.useApi');
       this.logger.warn(
-        `SMTP non configuré [${provider}] — renseignez MAIL_USER + MAIL_PASS (clé SMTP Brevo) puis npm run mail:test`,
+        useApi
+          ? 'Brevo API non configuré — renseignez MAIL_API_KEY'
+          : `SMTP non configuré [${provider}] — renseignez MAIL_USER + MAIL_PASS (clé SMTP Brevo) puis npm run mail:test`,
       );
-      this.logger.warn(`Provider attendu : ${providerLabel}`);
+      if (!useApi) {
+        this.logger.warn(`Provider attendu : ${providerLabel}`);
+      }
+      return;
+    }
+
+    const from = this.configService.get<string>('mail.from')!;
+    const useApi = this.configService.get<boolean>('mail.useApi');
+
+    if (useApi) {
+      this.logger.log(`Mail prêt [brevo-api] — expéditeur: ${from}`);
       return;
     }
 
@@ -52,7 +65,6 @@ export class MailService implements OnModuleInit {
     const port = this.configService.get<number>('mail.port')!;
     const user = this.configService.get<string>('mail.user')!;
     const pass = this.configService.get<string>('mail.pass')!;
-    const from = this.configService.get<string>('mail.from')!;
 
     try {
       await verifySmtpConnection({ host, port, user, pass });
