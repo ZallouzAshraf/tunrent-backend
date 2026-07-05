@@ -1,26 +1,25 @@
 import 'dotenv/config';
 import dataSource from './data-source';
-import {
-  isSupabaseHost,
-  resolveDatabasePort,
-} from '../config/database.config';
+import { isSupabaseHost, resolveDatabasePort } from '../config/database.config';
 
 function assertMigrationConnection(): void {
   const host = process.env.DB_HOST || 'localhost';
   const port = resolveDatabasePort(host);
-  const usesPooler =
-    process.env.DB_USE_POOLER === 'true' ||
-    host.includes('pooler.supabase.com') ||
-    port === 6543;
+  const usesTransactionPooler = port === 6543;
 
-  if (usesPooler) {
+  if (usesTransactionPooler) {
     console.error(
-      '[migrations] Supabase pooler (6543) does not support DDL. Use direct connection: DB_HOST=db.xxx.supabase.co, DB_PORT=5432, DB_USE_POOLER=false',
+      '[migrations] Supabase Transaction Pooler (6543) does not support DDL. ' +
+        'Use the Session Pooler on port 5432 instead (same DB_HOST), or a direct connection.',
     );
     process.exit(1);
   }
 
-  if (isSupabaseHost(host)) {
+  if (host.includes('pooler.supabase.com')) {
+    console.log(
+      '[migrations] Supabase Session Pooler detected (port 5432, DDL supported)',
+    );
+  } else if (isSupabaseHost(host)) {
     console.log('[migrations] Supabase direct connection detected');
   }
 }
@@ -39,12 +38,12 @@ async function runMigrations(): Promise<void> {
   try {
     const isDev = process.env.NODE_ENV !== 'production';
     if (isDev) {
-      const [{ exists }] = (await dataSource.query(
+      const [{ exists }] = await dataSource.query(
         `SELECT EXISTS (
           SELECT 1 FROM information_schema.tables
           WHERE table_schema = 'public' AND table_name = 'users'
         ) AS exists`,
-      )) as [{ exists: boolean }];
+      );
 
       if (exists) {
         console.log(
