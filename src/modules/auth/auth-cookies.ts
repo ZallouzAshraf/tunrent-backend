@@ -20,6 +20,14 @@ export function resolveHomePath(ctx: AuthCookieContext): string {
   return '/account';
 }
 
+export function resolveAuthCookiePaths(): { refresh: string; root: string } {
+  const prefix = (process.env.COOKIE_PATH_PREFIX || '').replace(/\/$/, '');
+  return {
+    refresh: prefix ? `${prefix}/auth` : '/auth',
+    root: '/',
+  };
+}
+
 export function setAuthCookies(
   res: Response,
   refreshToken: string,
@@ -27,12 +35,13 @@ export function setAuthCookies(
   ctx?: AuthCookieContext,
 ): void {
   const isProd = process.env.NODE_ENV === 'production';
+  const paths = resolveAuthCookiePaths();
 
   res.cookie(REFRESH_COOKIE, refreshToken, {
     httpOnly: true,
     secure: isProd,
     sameSite: 'lax',
-    path: '/auth',
+    path: paths.refresh,
     expires: expiresAt,
   });
 
@@ -40,7 +49,7 @@ export function setAuthCookies(
     httpOnly: false,
     secure: isProd,
     sameSite: 'lax',
-    path: '/',
+    path: paths.root,
     expires: expiresAt,
   });
 
@@ -49,7 +58,7 @@ export function setAuthCookies(
       httpOnly: false,
       secure: isProd,
       sameSite: 'lax',
-      path: '/',
+      path: paths.root,
       expires: expiresAt,
     });
   }
@@ -58,8 +67,13 @@ export function setAuthCookies(
 export function clearAuthCookies(res: Response): void {
   const isProd = process.env.NODE_ENV === 'production';
   const base = { secure: isProd, sameSite: 'lax' as const };
+  const paths = resolveAuthCookiePaths();
 
-  res.clearCookie(REFRESH_COOKIE, { ...base, path: '/auth', httpOnly: true });
-  res.clearCookie(LOGGED_IN_COOKIE, { ...base, path: '/' });
-  res.clearCookie(HOME_COOKIE, { ...base, path: '/' });
+  res.clearCookie(REFRESH_COOKIE, {
+    ...base,
+    path: paths.refresh,
+    httpOnly: true,
+  });
+  res.clearCookie(LOGGED_IN_COOKIE, { ...base, path: paths.root });
+  res.clearCookie(HOME_COOKIE, { ...base, path: paths.root });
 }
