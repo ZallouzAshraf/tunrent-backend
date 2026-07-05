@@ -6,6 +6,7 @@ import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import cloudinaryConfig from './config/cloudinary.config';
+import authConfig from './config/auth.config';
 import mailConfig from './config/mail.config';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { AvailabilityModule } from './modules/availability/availability.module';
@@ -37,6 +38,7 @@ import { DatabaseModule } from './database/database.module';
         appConfig,
         databaseConfig,
         jwtConfig,
+        authConfig,
         mailConfig,
         cloudinaryConfig,
       ],

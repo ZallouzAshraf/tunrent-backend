@@ -17,11 +17,10 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/roles.decorator';
 import {
-  clearAuthCookies,
+  AuthCookieService,
   REFRESH_COOKIE,
-  setAuthCookies,
   type AuthCookieContext,
-} from './auth-cookies';
+} from './auth-cookie.service';
 import { AuthService, type SessionResult } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
@@ -61,7 +60,10 @@ function authCookieContext(result: SessionResult): AuthCookieContext {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly authCookies: AuthCookieService,
+  ) {}
 
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -80,11 +82,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.login(dto, requestMeta(req));
-    console.log('[auth] POST /auth/login success — calling setAuthCookies', {
-      userId: result.user.id ?? '(unknown)',
-      email: result.user.email ?? '(unknown)',
-    });
-    setAuthCookies(
+    this.authCookies.setAuthCookies(
       res,
       result.refreshToken,
       result.refreshTokenExpiresAt,
@@ -94,6 +92,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
@@ -102,7 +101,7 @@ export class AuthController {
   ) {
     const rawToken = req.cookies?.[REFRESH_COOKIE];
     if (!rawToken) {
-      clearAuthCookies(res);
+      this.authCookies.clearAuthCookies(res);
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -110,7 +109,7 @@ export class AuthController {
       rawToken,
       requestMeta(req),
     );
-    setAuthCookies(
+    this.authCookies.setAuthCookies(
       res,
       result.refreshToken,
       result.refreshTokenExpiresAt,
@@ -124,7 +123,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     await this.authService.logoutFromCookie(req.cookies?.[REFRESH_COOKIE]);
-    clearAuthCookies(res);
+    this.authCookies.clearAuthCookies(res);
     return { message: 'Logged out successfully' };
   }
 
@@ -135,7 +134,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.authService.logoutAll(user.sub);
-    clearAuthCookies(res);
+    this.authCookies.clearAuthCookies(res);
     return { message: 'Logged out from all devices successfully' };
   }
 
@@ -185,7 +184,10 @@ export class AuthController {
 
 @Controller('dashboard/auth')
 export class DashboardAuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly authCookies: AuthCookieService,
+  ) {}
 
   @Public()
   @LoginThrottle()
@@ -202,7 +204,7 @@ export class DashboardAuthController {
       return result;
     }
 
-    setAuthCookies(
+    this.authCookies.setAuthCookies(
       res,
       result.refreshToken,
       result.refreshTokenExpiresAt,

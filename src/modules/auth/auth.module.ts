@@ -3,12 +3,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import authConfig from '../../config/auth.config';
 import jwtConfig from '../../config/jwt.config';
 import { AuditLog } from '../audit/entities/audit-log.entity';
 import { AgencyUser } from '../agency-users/entities/agency-user.entity';
 import { MailModule } from '../mail/mail.module';
 import { User } from '../users/entities/user.entity';
 import { AuthController, DashboardAuthController } from './auth.controller';
+import { AuthCookieService } from './auth-cookie.service';
 import { AuthService } from './auth.service';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -19,6 +21,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     MailModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     ConfigModule.forFeature(jwtConfig),
+    ConfigModule.forFeature(authConfig),
     JwtModule.registerAsync({
       imports: [ConfigModule.forFeature(jwtConfig)],
       inject: [ConfigService],
@@ -33,7 +36,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
   ],
   controllers: [AuthController, DashboardAuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, AuthCookieService, JwtStrategy],
   exports: [AuthService, JwtModule, PassportModule, JwtStrategy],
 })
 export class AuthModule {}

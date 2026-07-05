@@ -135,9 +135,27 @@ export class AuthService implements OnModuleInit {
   }
 
   async login(dto: LoginDto, meta: RequestMeta = {}): Promise<SessionResult> {
-    const user = await this.validateCredentials(dto.email, dto.password);
-    this.ensureClientEmailVerified(user);
-    return this.createSession(user, {}, meta);
+    try {
+      const user = await this.validateCredentials(dto.email, dto.password);
+      this.ensureClientEmailVerified(user);
+      const session = await this.createSession(user, {}, meta);
+      this.logAuthEvent('auth.login.success', {
+        userId: user.id,
+        email: user.email,
+        ip: meta.ip,
+      });
+      return session;
+    } catch (error) {
+      this.logAuthEvent('auth.login.failure', {
+        email: dto.email.toLowerCase().trim(),
+        ip: meta.ip,
+        reason:
+          error instanceof UnauthorizedException
+            ? 'invalid_credentials'
+            : 'other',
+      });
+      throw error;
+    }
   }
 
   async dashboardLogin(
@@ -204,6 +222,10 @@ export class AuthService implements OnModuleInit {
         secret: refreshSecret,
       });
     } catch {
+      this.logAuthEvent('auth.refresh.failure', {
+        ip: meta.ip,
+        reason: 'jwt_verify_failed',
+      });
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -213,6 +235,11 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!record) {
+      this.logAuthEvent('auth.refresh.failure', {
+        userId: payload.sub,
+        ip: meta.ip,
+        reason: 'token_not_found',
+      });
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -223,22 +250,36 @@ export class AuthService implements OnModuleInit {
         'security.refresh_token_reuse_detected',
         meta,
       );
+      this.logAuthEvent('auth.refresh.reuse_detected', {
+        userId: record.userId,
+        ip: meta.ip,
+      });
       throw new UnauthorizedException('Invalid refresh token');
     }
 
     if (record.expiresAt < new Date()) {
+      this.logAuthEvent('auth.refresh.failure', {
+        userId: record.userId,
+        ip: meta.ip,
+        reason: 'expired',
+      });
       throw new UnauthorizedException('Invalid refresh token');
     }
 
     const user = await this.userRepo.findOne({ where: { id: payload.sub } });
     if (!user || !user.isActive) {
+      this.logAuthEvent('auth.refresh.failure', {
+        userId: payload.sub,
+        ip: meta.ip,
+        reason: 'user_inactive',
+      });
       throw new UnauthorizedException('Invalid refresh token');
     }
 
     record.revokedAt = new Date();
     await this.refreshTokenRepo.save(record);
 
-    return this.createSession(
+    const session = await this.createSession(
       user,
       {
         agencyId: record.agencyId ?? payload.agencyId,
@@ -246,6 +287,11 @@ export class AuthService implements OnModuleInit {
       },
       meta,
     );
+    this.logAuthEvent('auth.refresh.success', {
+      userId: user.id,
+      ip: meta.ip,
+    });
+    return session;
   }
 
   async logoutFromCookie(rawToken?: string): Promise<{ message: string }> {
@@ -257,6 +303,7 @@ export class AuthService implements OnModuleInit {
       if (record && !record.revokedAt) {
         record.revokedAt = new Date();
         await this.refreshTokenRepo.save(record);
+        this.logAuthEvent('auth.logout.success', { userId: record.userId });
       }
     }
 
@@ -265,6 +312,7 @@ export class AuthService implements OnModuleInit {
 
   async logoutAll(userId: string): Promise<{ message: string }> {
     await this.revokeAllUserTokens(userId);
+    this.logAuthEvent('auth.logout_all.success', { userId });
     return { message: 'Logged out from all devices successfully' };
   }
 
@@ -525,6 +573,13 @@ export class AuthService implements OnModuleInit {
     if (result.affected) {
       this.logger.log(`Purged ${result.affected} expired refresh tokens`);
     }
+  }
+
+  private logAuthEvent(
+    event: string,
+    data: Record<string, string | undefined>,
+  ): void {
+    this.logger.log(JSON.stringify({ event, ...data, ts: Date.now() }));
   }
 
   private async logSecurityEvent(

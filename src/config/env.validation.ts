@@ -38,6 +38,12 @@ export function validateEnvironment(): void {
     errors.push('DB_HOST is required in production');
   }
 
+  if (isProd && !process.env.COOKIE_PATH_PREFIX?.trim()) {
+    errors.push(
+      'COOKIE_PATH_PREFIX is required in production (e.g. /api/backend for Vercel proxy)',
+    );
+  }
+
   if (errors.length > 0) {
     const message = `Environment validation failed:\n- ${errors.join('\n- ')}`;
     if (isProd) {
